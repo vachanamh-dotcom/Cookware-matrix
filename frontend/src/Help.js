@@ -348,9 +348,9 @@ export default function Help() {
                 Go to Homepage
               </button>
             </Link>
-            <Link to="/compare">
+            <Link to="/home">
               <button className="bg-slate-800 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:bg-slate-900 transition-all transform hover:scale-105">
-                Start Comparing
+                Start Your Journey
               </button>
             </Link>
           </div>

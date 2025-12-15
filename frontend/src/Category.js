@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { ArrowLeft, Filter, Star, ShoppingCart, Heart, Loader } from "lucide-react";
+import { formatPrice, getImage } from "./utils/formatters";
 
 export default function CategoryPage() {
-  const [selectedCategory] = useState("Frying Pan"); // This would come from route params
+  const location = useLocation();
+  const selectedCategory = location.state?.category || "Fry Pan";
+  
   const [selectedMaterial, setSelectedMaterial] = useState("All");
   const [priceFilter, setPriceFilter] = useState("All");
   const [products, setProducts] = useState([]);
@@ -17,8 +21,9 @@ export default function CategoryPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      // Replace this URL with your actual API endpoint
-      const response = await fetch(`/api/products?category=${selectedCategory}`);
+      const response = await fetch(
+        `http://localhost:5000/api/cookware?category=${encodeURIComponent(selectedCategory)}`
+      );
       
       if (!response.ok) {
         throw new Error('Failed to fetch products');
@@ -29,34 +34,11 @@ export default function CategoryPage() {
       setError(null);
     } catch (err) {
       console.error('Error fetching products:', err);
-      setError(err.message);
-      // Fallback to dummy data if API fails
-      setProducts(getDummyProducts());
+      setError("Unable to load products");
+      setProducts([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  // Dummy data function as fallback
-  const getDummyProducts = () => {
-    return [
-      {
-        id: 1,
-        name: "Premium Non-Stick Frying Pan",
-        brand: "CookPro Elite",
-        material: "Non-Stick",
-        size: "10 inch",
-        rating: 4.8,
-        reviews: 2847,
-        price: 2499,
-        originalPrice: 3499,
-        discount: 29,
-        image: "🍳",
-        features: ["PFOA Free", "Induction Base", "Heat Resistant Handle"],
-        badge: "Best Seller"
-      },
-      // ... more dummy products
-    ];
   };
 
   const priceRanges = [
@@ -92,7 +74,7 @@ export default function CategoryPage() {
     // Material filter
     const materialMatch = selectedMaterial === "All" || product.material === selectedMaterial;
     
-    // Price filter
+    // Price filter (prices stored in rupees)
     let priceMatch = true;
     if (priceFilter !== "All") {
       const selectedRange = priceRanges.find(range => range.range === priceFilter);
@@ -152,7 +134,7 @@ export default function CategoryPage() {
         {error && !loading && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 mb-8 animate-fadeInUp">
             <p className="text-red-400">⚠️ {error}</p>
-            <p className="text-slate-400 text-sm mt-2">Showing sample products instead.</p>
+            <p className="text-slate-400 text-sm mt-2">Please make sure the backend server is running on port 5000.</p>
           </div>
         )}
 
@@ -216,75 +198,62 @@ export default function CategoryPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredProducts.map((product, index) => (
                 <div
-                  key={product.id}
+                  key={product._id}
                   className="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all transform hover:scale-[1.02] hover:shadow-2xl cursor-pointer animate-fadeInUp"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  {/* Badge and Actions */}
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1 rounded-full font-semibold">
-                      {product.badge}
-                    </span>
+                  {/* Actions */}
+                  <div className="flex justify-end items-start mb-4">
                     <button className="text-slate-400 hover:text-red-400 transition-colors">
                       <Heart className="w-5 h-5" />
                     </button>
                   </div>
 
-                  {/* Discount Badge */}
-                  {product.discount && (
-                    <div className="absolute top-6 right-6 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-lg">
-                      {product.discount}% OFF
-                    </div>
-                  )}
-
                   {/* Product Image */}
                   <div className="text-center mb-6">
-                    <div className="text-8xl mb-4 transform group-hover:scale-110 transition-transform">
-                      {product.image}
-                    </div>
-                    <span className="inline-block bg-slate-700/50 text-slate-300 text-xs px-3 py-1 rounded-full">
-                      {product.material}
-                    </span>
+                    <img 
+                      src={getImage(product.image)} 
+                      alt={product.title}
+                      className="w-32 h-32 object-contain mx-auto mb-4 transform group-hover:scale-110 transition-transform"
+                      onError={(e) => {
+                        e.target.src = "/placeholder.png";
+                        e.target.onerror = null;
+                      }}
+                    />
+                    {product.material && (
+                      <span className="inline-block bg-slate-700/50 text-slate-300 text-xs px-3 py-1 rounded-full">
+                        {product.material}
+                      </span>
+                    )}
                   </div>
 
                   {/* Product Info */}
                   <div className="space-y-3">
                     <div>
                       <h3 className="text-white font-bold text-lg leading-tight mb-1">
-                        {product.name}
+                        {product.title}
                       </h3>
-                      <p className="text-slate-400 text-sm">{product.brand} • {product.size}</p>
+                      <p className="text-slate-400 text-sm">
+                        {product.brand} {product.dimensions && `• ${product.dimensions}`}
+                      </p>
                     </div>
 
                     {/* Rating */}
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span className="text-white font-semibold ml-1">{product.rating}</span>
+                    {product.rating && (
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center">
+                          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                          <span className="text-white font-semibold ml-1">{product.rating}</span>
+                        </div>
                       </div>
-                      <span className="text-slate-500 text-sm">({product.reviews.toLocaleString()})</span>
-                    </div>
-
-                    {/* Features */}
-                    <div className="flex flex-wrap gap-2">
-                      {product.features.slice(0, 2).map((feature, idx) => (
-                        <span key={idx} className="text-xs bg-slate-700/30 text-slate-300 px-2 py-1 rounded-lg">
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
+                    )}
 
                     {/* Price and Actions */}
                     <div className="pt-4 border-t border-white/10">
                       <div className="flex items-baseline gap-2 mb-3">
                         <span className="text-emerald-400 font-bold text-2xl">
-                          ₹{product.price.toLocaleString()}
+                          {formatPrice(product.price)}
                         </span>
-                        {product.originalPrice && (
-                          <span className="text-slate-500 text-sm line-through">
-                            ₹{product.originalPrice.toLocaleString()}
-                          </span>
-                        )}
                       </div>
                       <div className="flex gap-2">
                         <button className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-2.5 rounded-xl font-semibold hover:from-emerald-400 hover:to-teal-400 transition-all transform hover:scale-105 flex items-center justify-center gap-2">
@@ -301,11 +270,11 @@ export default function CategoryPage() {
               ))}
             </div>
 
-            {filteredProducts.length === 0 && (
+            {filteredProducts.length === 0 && !loading && (
               <div className="text-center py-20">
                 <div className="text-6xl mb-4">🔍</div>
                 <h3 className="text-white text-2xl font-bold mb-2">No products found</h3>
-                <p className="text-slate-400">Try adjusting your filters</p>
+                <p className="text-slate-400">Try adjusting your filters or check if products exist for this category</p>
               </div>
             )}
           </div>

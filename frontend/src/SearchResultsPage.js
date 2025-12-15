@@ -1,167 +1,27 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { ArrowLeft, Filter, Star, ShoppingCart, Heart, SlidersHorizontal, Grid, List } from "lucide-react";
+import { formatPrice, getImage } from "./utils/formatters";
 
 export default function SearchResultsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const location = useLocation();
+  const searchQuery = location.state?.query || "";
+  
   const [products, setProducts] = useState([]);
-  const [viewMode, setViewMode] = useState("grid"); // "grid" or "list"
+  const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("relevance");
   const [selectedBrand, setSelectedBrand] = useState("All");
   const [priceFilter, setPriceFilter] = useState("All");
   const [ratingFilter, setRatingFilter] = useState("All");
 
   useEffect(() => {
-    // Get search query from sessionStorage
-    const query = sessionStorage.getItem('searchQuery') || "";
-    setSearchQuery(query);
-    
-    // Load products based on search query
-    setProducts(getSearchResults(query));
-  }, []);
+    if (!searchQuery) return;
 
-  const getSearchResults = (query) => {
-    // Dummy data - replace with actual API call
-    const allProducts = [
-      {
-        id: 1,
-        name: "Prestige Deluxe Plus Pressure Cooker",
-        brand: "Prestige",
-        category: "Pressure Cooker",
-        size: "5 Liter",
-        rating: 4.6,
-        reviews: 15234,
-        price: 1899,
-        originalPrice: 2799,
-        discount: 32,
-        image: "🍲",
-        features: ["Induction Base", "Controlled Gasket Release", "5 Year Warranty"],
-        inStock: true,
-        badge: "Best Seller"
-      },
-      {
-        id: 2,
-        name: "Hawkins Futura Hard Anodised Pressure Cooker",
-        brand: "Hawkins",
-        category: "Pressure Cooker",
-        size: "3.5 Liter",
-        rating: 4.7,
-        reviews: 8932,
-        price: 2299,
-        originalPrice: 3299,
-        discount: 30,
-        image: "🍲",
-        features: ["Hard Anodised", "Stay Cool Handles", "Energy Efficient"],
-        inStock: true,
-        badge: "Top Rated"
-      },
-      {
-        id: 3,
-        name: "Prestige Non-Stick Frying Pan",
-        brand: "Prestige",
-        category: "Frying Pan",
-        size: "10 inch",
-        rating: 4.4,
-        reviews: 6543,
-        price: 899,
-        originalPrice: 1499,
-        discount: 40,
-        image: "🍳",
-        features: ["PFOA Free", "Scratch Resistant", "Induction Compatible"],
-        inStock: true,
-        badge: "Budget Pick"
-      },
-      {
-        id: 4,
-        name: "Pigeon by Stovekraft Aluminium Pressure Cooker",
-        brand: "Pigeon",
-        category: "Pressure Cooker",
-        size: "5 Liter",
-        rating: 4.3,
-        reviews: 12456,
-        price: 1399,
-        originalPrice: 2199,
-        discount: 36,
-        image: "🍲",
-        features: ["Inner Lid", "Outer Lid", "Gasket Release System"],
-        inStock: true,
-        badge: "Value for Money"
-      },
-      {
-        id: 5,
-        name: "Prestige Omega Deluxe Granite Frying Pan",
-        brand: "Prestige",
-        category: "Frying Pan",
-        size: "12 inch",
-        rating: 4.5,
-        reviews: 3421,
-        price: 1599,
-        originalPrice: 2499,
-        discount: 36,
-        image: "🍳",
-        features: ["Granite Coating", "Metal Spoon Friendly", "Gas & Induction"],
-        inStock: true,
-        badge: "Premium Choice"
-      },
-      {
-        id: 6,
-        name: "Wonderchef Granite Aluminium Pressure Cooker",
-        brand: "Wonderchef",
-        category: "Pressure Cooker",
-        size: "3 Liter",
-        rating: 4.6,
-        reviews: 5678,
-        price: 1799,
-        originalPrice: 2999,
-        discount: 40,
-        image: "🍲",
-        features: ["5 Layer Granite Coating", "Induction Base", "German Technology"],
-        inStock: true,
-        badge: "Chef's Choice"
-      },
-      {
-        id: 7,
-        name: "Prestige Stainless Steel Cooker",
-        brand: "Prestige",
-        category: "Pressure Cooker",
-        size: "4 Liter",
-        rating: 4.5,
-        reviews: 9876,
-        price: 1699,
-        originalPrice: 2399,
-        discount: 29,
-        image: "🍲",
-        features: ["Stainless Steel", "Metallic Safety Plug", "Sandwich Bottom"],
-        inStock: true,
-        badge: "Durable"
-      },
-      {
-        id: 8,
-        name: "Tefal Hard Anodised Frying Pan",
-        brand: "Tefal",
-        category: "Frying Pan",
-        size: "11 inch",
-        rating: 4.7,
-        reviews: 4532,
-        price: 2199,
-        originalPrice: 3299,
-        discount: 33,
-        image: "🍳",
-        features: ["Thermo-Spot Technology", "Extra Deep", "Riveted Handle"],
-        inStock: false,
-        badge: "Premium"
-      }
-    ];
-
-    // Filter products based on search query
-    if (!query) return allProducts;
-    
-    const lowerQuery = query.toLowerCase();
-    return allProducts.filter(product => 
-      product.name.toLowerCase().includes(lowerQuery) ||
-      product.brand.toLowerCase().includes(lowerQuery) ||
-      product.category.toLowerCase().includes(lowerQuery)
-    );
-  };
+    fetch(`http://localhost:5000/api/cookware/search?q=${encodeURIComponent(searchQuery)}`)
+      .then(res => res.json())
+      .then(data => setProducts(data))
+      .catch(() => setProducts([]));
+  }, [searchQuery]);
 
   const brands = ["All", ...new Set(products.map(p => p.brand))];
   
@@ -351,63 +211,54 @@ export default function SearchResultsPage() {
                   viewMode === "grid" ? (
                     // Grid View
                     <div
-                      key={product.id}
+                      key={product._id}
                       className="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 hover:bg-white/10 transition-all transform hover:scale-[1.02] cursor-pointer animate-fadeInUp"
                       style={{ animationDelay: `${index * 0.05}s` }}
                     >
-                      <div className="flex justify-between items-start mb-3">
-                        <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                          {product.badge}
-                        </span>
+                      <div className="flex justify-end items-start mb-3">
                         <button className="text-slate-400 hover:text-red-400 transition-colors">
                           <Heart className="w-4 h-4" />
                         </button>
                       </div>
 
-                      {product.discount && (
-                        <div className="absolute top-5 right-5 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-lg">
-                          {product.discount}% OFF
-                        </div>
-                      )}
-
                       <div className="text-center mb-4">
-                        <div className="text-6xl mb-2 transform group-hover:scale-110 transition-transform">
-                          {product.image}
-                        </div>
-                        {!product.inStock && (
-                          <span className="text-red-400 text-xs font-semibold">Out of Stock</span>
-                        )}
+                        <img
+                          src={getImage(product.image)}
+                          alt={product.title}
+                          className="w-32 h-32 object-contain mx-auto mb-2 transform group-hover:scale-110 transition-transform"
+                          onError={(e) => {
+                            e.target.src = "/placeholder.png";
+                            e.target.onerror = null;
+                          }}
+                        />
                       </div>
 
                       <div className="space-y-2">
-                        <h3 className="text-white font-bold text-base leading-tight">{product.name}</h3>
-                        <p className="text-slate-400 text-xs">{product.brand} • {product.size}</p>
+                        <h3 className="text-white font-bold text-base leading-tight">{product.title}</h3>
+                        <p className="text-slate-400 text-xs">
+                          {product.brand} {product.dimensions && `• ${product.dimensions}`}
+                        </p>
                         
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center bg-green-600 px-2 py-0.5 rounded">
-                            <span className="text-white font-semibold text-xs">{product.rating}</span>
-                            <Star className="w-3 h-3 text-white fill-white ml-0.5" />
+                        {product.rating && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center bg-green-600 px-2 py-0.5 rounded">
+                              <span className="text-white font-semibold text-xs">{product.rating}</span>
+                              <Star className="w-3 h-3 text-white fill-white ml-0.5" />
+                            </div>
                           </div>
-                          <span className="text-slate-500 text-xs">({product.reviews.toLocaleString()})</span>
-                        </div>
+                        )}
 
                         <div className="pt-3 border-t border-white/10">
                           <div className="flex items-baseline gap-2 mb-2">
-                            <span className="text-emerald-400 font-bold text-xl">₹{product.price.toLocaleString()}</span>
-                            {product.originalPrice && (
-                              <span className="text-slate-500 text-xs line-through">₹{product.originalPrice.toLocaleString()}</span>
-                            )}
+                            <span className="text-emerald-400 font-bold text-xl">
+                              {formatPrice(product.price)}
+                            </span>
                           </div>
                           <button 
-                            disabled={!product.inStock}
-                            className={`w-full py-2 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
-                              product.inStock 
-                                ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-400 hover:to-teal-400 transform hover:scale-105"
-                                : "bg-slate-700/50 text-slate-400 cursor-not-allowed"
-                            }`}
+                            className="w-full py-2 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-400 hover:to-teal-400 transform hover:scale-105"
                           >
                             <ShoppingCart className="w-4 h-4" />
-                            {product.inStock ? "Add to Cart" : "Out of Stock"}
+                            Add to Cart
                           </button>
                         </div>
                       </div>
@@ -415,66 +266,57 @@ export default function SearchResultsPage() {
                   ) : (
                     // List View
                     <div
-                      key={product.id}
+                      key={product._id}
                       className="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition-all cursor-pointer animate-fadeInUp flex gap-4"
                       style={{ animationDelay: `${index * 0.05}s` }}
                     >
                       <div className="flex-shrink-0 w-32 h-32 flex items-center justify-center">
-                        <div className="text-7xl">{product.image}</div>
+                        <img
+                          src={getImage(product.image)}
+                          alt={product.title}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            e.target.src = "/placeholder.png";
+                            e.target.onerror = null;
+                          }}
+                        />
                       </div>
                       
                       <div className="flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex items-start justify-between mb-2">
                             <div>
-                              <h3 className="text-white font-bold text-lg mb-1">{product.name}</h3>
-                              <p className="text-slate-400 text-sm">{product.brand} • {product.size}</p>
+                              <h3 className="text-white font-bold text-lg mb-1">{product.title}</h3>
+                              <p className="text-slate-400 text-sm">
+                                {product.brand} {product.dimensions && `• ${product.dimensions}`}
+                              </p>
                             </div>
                             <button className="text-slate-400 hover:text-red-400 transition-colors">
                               <Heart className="w-5 h-5" />
                             </button>
                           </div>
                           
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="flex items-center bg-green-600 px-2 py-1 rounded">
-                              <span className="text-white font-semibold text-sm">{product.rating}</span>
-                              <Star className="w-3 h-3 text-white fill-white ml-1" />
+                          {product.rating && (
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="flex items-center bg-green-600 px-2 py-1 rounded">
+                                <span className="text-white font-semibold text-sm">{product.rating}</span>
+                                <Star className="w-3 h-3 text-white fill-white ml-1" />
+                              </div>
                             </div>
-                            <span className="text-slate-500 text-sm">({product.reviews.toLocaleString()} reviews)</span>
-                            <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                              {product.badge}
-                            </span>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2 mb-3">
-                            {product.features.map((feature, idx) => (
-                              <span key={idx} className="text-xs bg-slate-700/30 text-slate-300 px-2 py-1 rounded">
-                                {feature}
-                              </span>
-                            ))}
-                          </div>
+                          )}
                         </div>
 
                         <div className="flex items-center justify-between">
                           <div className="flex items-baseline gap-2">
-                            <span className="text-emerald-400 font-bold text-2xl">₹{product.price.toLocaleString()}</span>
-                            {product.originalPrice && (
-                              <>
-                                <span className="text-slate-500 text-sm line-through">₹{product.originalPrice.toLocaleString()}</span>
-                                <span className="text-red-400 text-sm font-semibold">{product.discount}% off</span>
-                              </>
-                            )}
+                            <span className="text-emerald-400 font-bold text-2xl">
+                              {formatPrice(product.price)}
+                            </span>
                           </div>
                           <button 
-                            disabled={!product.inStock}
-                            className={`px-6 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-2 ${
-                              product.inStock 
-                                ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-400 hover:to-teal-400"
-                                : "bg-slate-700/50 text-slate-400 cursor-not-allowed"
-                            }`}
+                            className="px-6 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-400 hover:to-teal-400"
                           >
                             <ShoppingCart className="w-4 h-4" />
-                            {product.inStock ? "Add to Cart" : "Out of Stock"}
+                            Add to Cart
                           </button>
                         </div>
                       </div>

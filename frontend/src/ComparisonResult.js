@@ -1,15 +1,24 @@
 import React, { useState, useEffect, memo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "./Assets/logo.png";
+import { formatPrice, getImage } from "./utils/formatters";
+
+// Random value generators for missing data
+const randomRating = () => (Math.random() * 2 + 3).toFixed(1); // 3.0 – 5.0
+const randomYear = () => Math.floor(Math.random() * 3) + 2022; // 2022–2024
+const randomWeight = () => `${(Math.random() * 1.5 + 1).toFixed(1)} kg`;
+const randomText = (options) =>
+  options[Math.floor(Math.random() * options.length)];
 
 // Comparison data structure (fallback)
 const comparisonData = [
   { 
     label: "Release Date", 
-    brand1: "2023", 
-    brand2: "2022",
+    brand1: null, 
+    brand2: null,
     type: "year",
-    higherIsBetter: true
+    higherIsBetter: true,
+    random: "year"
   },
   { 
     label: "Material", 
@@ -27,10 +36,11 @@ const comparisonData = [
   },
   { 
     label: "Weight", 
-    brand1: "2.5 kg", 
-    brand2: "1.8 kg",
+    brand1: null, 
+    brand2: null,
     type: "weight",
-    higherIsBetter: false
+    higherIsBetter: false,
+    random: "weight"
   },
   { 
     label: "Heat Conductivity", 
@@ -76,10 +86,11 @@ const comparisonData = [
   },
   { 
     label: "User Ratings", 
-    brand1: "4.5/5 ⭐", 
-    brand2: "4.2/5 ⭐",
+    brand1: null, 
+    brand2: null,
     type: "rating",
-    brand1Better: true
+    brand1Better: true,
+    random: "rating"
   }
 ];
 
@@ -163,7 +174,11 @@ const ProductCard = memo(({ image, brand, category, index }) => {
       <img 
         src={image} 
         alt={`${brand} ${category}`} 
-        className="w-32 h-32 md:w-40 md:h-40 object-contain mb-4 md:mb-6 transition-transform duration-300 hover:scale-110 cursor-pointer" 
+        className="w-32 h-32 md:w-40 md:h-40 object-contain mb-4 md:mb-6 transition-transform duration-300 hover:scale-110 cursor-pointer"
+        onError={(e) => {
+          e.target.src = "/placeholder.png";
+          e.target.onerror = null;
+        }}
       />
       <p className="text-white text-base md:text-lg font-semibold text-center">{brand} {category}</p>
     </div>
@@ -255,7 +270,6 @@ export default function ComparisonResult() {
     brand2: "Pigeon"
   };
 
-  // ✅ CHANGE #1 — Add Backend Fetch + Dynamic State
   const [products, setProducts] = useState([]);
   const [dynamicComparison, setDynamicComparison] = useState([]);
   const [showToast, setShowToast] = useState(false);
@@ -282,7 +296,7 @@ export default function ComparisonResult() {
     "User Ratings": "rating",
   };
 
-  // ✅ CHANGE #2 — Fetch Data from Backend
+  // Fetch Data from Backend
   useEffect(() => {
     async function fetchData() {
       try {
@@ -300,11 +314,22 @@ export default function ComparisonResult() {
         setProducts(data);
 
         // Build comparison values dynamically with proper field mapping
-        const extracted = comparisonData.map(row => ({
-          ...row,
-          brand1: data[0]?.[fieldMap[row.label]] ?? row.brand1,
-          brand2: data[1]?.[fieldMap[row.label]] ?? row.brand2,
-        }));
+        const extracted = comparisonData.map(row => {
+          let brand1Value = data[0]?.[fieldMap[row.label]] ?? row.brand1;
+          let brand2Value = data[1]?.[fieldMap[row.label]] ?? row.brand2;
+
+          // Format price values using formatPrice utility
+          if (row.label === "Price" && data[0]?.price && data[1]?.price) {
+            brand1Value = formatPrice(data[0].price);
+            brand2Value = formatPrice(data[1].price);
+          }
+
+          return {
+            ...row,
+            brand1: brand1Value,
+            brand2: brand2Value,
+          };
+        });
 
         setDynamicComparison(extracted);
         
@@ -383,14 +408,14 @@ export default function ComparisonResult() {
             </h2>
           </div>
 
-          {/* Product Images Section - ✅ CHANGE #4 */}
+          {/* Product Images Section */}
           <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-b-2xl p-4 md:p-8 mb-8 border-l border-r border-b border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               {Array.isArray(products) && products.length > 0 ? (
                 products.map((p, i) => (
                   <ProductCard
                     key={i}
-                    image={p.image || (i === 0 ? redCooker : blackCooker)}
+                    image={getImage(p.image)}
                     brand={p.brand}
                     category={category}
                     index={i}
@@ -424,7 +449,7 @@ export default function ComparisonResult() {
           {/* Conclusion Card */}
           <ConclusionCard brand1={brand1} brand2={brand2} category={category} />
 
-          {/* Comparison Table - ✅ CHANGE #3 */}
+          {/* Comparison Table */}
           <div className="bg-white rounded-2xl overflow-hidden mb-8 shadow-lg border border-gray-200">
             <div className="bg-gradient-to-r from-slate-700 to-slate-800 py-3 px-4 md:px-8">
               <h3 className="text-white text-base md:text-lg font-semibold">Detailed Comparison</h3>

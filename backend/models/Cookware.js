@@ -12,9 +12,15 @@ const cookwareSchema = new mongoose.Schema({
   durability: String,
   efficiency: String,
   specialFeatures: String,
-  price: Number,
+  price: {
+    type: Number, // RUPEES ONLY
+    required: false
+  },
   rating: Number,
-  image: String,
+  image: {
+    type: String,
+    default: ""
+  },
   sourceUrl: String,
   scrapedAt: { type: Date, default: Date.now }
 });

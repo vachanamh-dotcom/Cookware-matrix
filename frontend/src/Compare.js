@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "./Assets/logo.png";
 
@@ -6,26 +6,7 @@ import logo from "./Assets/logo.png";
 const redCooker = "https://via.placeholder.com/60x60/C85A54/FFFFFF?text=Red";
 const blackCooker = "https://via.placeholder.com/60x60/3C3C3C/FFFFFF?text=Black";
 
-// Dummy product data
-const productCategories = [
-  "Pressure Cooker",
-  "Frying Pan",
-  "Sauce Pan",
-  "Wok",
-  "Kadhai",
-  "Tawa"
-];
-
-const productBrands = {
-  "Pressure Cooker": ["Prestige", "Pigeon", "Hawkins", "Butterfly", "Wonderchef"],
-  "Frying Pan": ["Prestige", "Pigeon", "Hawkins", "Meyer", "Cello"],
-  "Sauce Pan": ["Prestige", "Pigeon", "Vinod", "Butterfly", "Meyer"],
-  "Wok": ["Prestige", "Pigeon", "Hawkins", "Vinod", "Cello"],
-  "Kadhai": ["Prestige", "Pigeon", "Hawkins", "Butterfly", "Vinod"],
-  "Tawa": ["Prestige", "Pigeon", "Hawkins", "Cello", "Wonderchef"]
-};
-
-// Popular comparisons data
+// Popular comparisons - keeping static for MVP
 const popularComparisons = [
   { brand1: "Prestige", brand2: "Pigeon", category: "Pressure Cooker" },
   { brand1: "Hawkins", brand2: "Butterfly", category: "Pressure Cooker" },
@@ -69,6 +50,12 @@ function ComparisonCard({ brand1, brand2, category, onClick, delay }) {
 export default function Compare() {
   const navigate = useNavigate();
   
+  // State for fetched data
+  const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingBrands, setLoadingBrands] = useState(false);
+  
   // State for dropdowns
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedBrand1, setSelectedBrand1] = useState("");
@@ -77,6 +64,42 @@ export default function Compare() {
   const [showBrand1Dropdown, setShowBrand1Dropdown] = useState(false);
   const [showBrand2Dropdown, setShowBrand2Dropdown] = useState(false);
   const [isComparing, setIsComparing] = useState(false);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    fetch("http://localhost:5000/api/cookware")
+      .then(res => res.json())
+      .then(data => {
+        const uniqueCategories = [...new Set(data.map(p => p.category))].filter(Boolean);
+        setCategories(uniqueCategories);
+        setLoadingCategories(false);
+      })
+      .catch(() => {
+        setLoadingCategories(false);
+      });
+  }, []);
+
+  // Fetch brands when category changes
+  useEffect(() => {
+    if (!selectedCategory) {
+      setBrands([]);
+      return;
+    }
+
+    setLoadingBrands(true);
+    fetch(`http://localhost:5000/api/cookware`)
+      .then(res => res.json())
+      .then(data => {
+        const filteredData = data.filter(p => p.category === selectedCategory);
+        const uniqueBrands = [...new Set(filteredData.map(p => p.brand))].filter(Boolean);
+        setBrands(uniqueBrands);
+        setLoadingBrands(false);
+      })
+      .catch(() => {
+        setBrands([]);
+        setLoadingBrands(false);
+      });
+  }, [selectedCategory]);
 
   const handleCategorySelect = (category) => {
     setSelectedCategory(category);
@@ -102,20 +125,26 @@ export default function Compare() {
   };
 
   const handleCompare = () => {
-    if (selectedCategory && selectedBrand1 && selectedBrand2) {
-      setIsComparing(true);
-      setTimeout(() => {
-        navigate('/comparison-result', {
-          state: {
-            category: selectedCategory,
-            brand1: selectedBrand1,
-            brand2: selectedBrand2
-          }
-        });
-      }, 500);
-    } else {
+    if (!selectedCategory || !selectedBrand1 || !selectedBrand2) {
       alert('Please select a product category and both brands to compare!');
+      return;
     }
+    
+    if (selectedBrand1 === selectedBrand2) {
+      alert('Please select two different brands to compare!');
+      return;
+    }
+    
+    setIsComparing(true);
+    setTimeout(() => {
+      navigate('/comparison-result', {
+        state: {
+          category: selectedCategory,
+          brand1: selectedBrand1,
+          brand2: selectedBrand2
+        }
+      });
+    }, 500);
   };
 
   const handlePopularComparisonClick = (comparison) => {
@@ -128,7 +157,6 @@ export default function Compare() {
     });
   };
 
-  const availableBrands = selectedCategory ? productBrands[selectedCategory] : [];
   const currentStep = !selectedCategory ? 1 : !selectedBrand1 ? 2 : !selectedBrand2 ? 3 : 4;
 
   return (
@@ -193,24 +221,29 @@ export default function Compare() {
               <div className="flex justify-center relative">
                 <button 
                   onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                  className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-20 py-4 rounded-full text-base font-semibold shadow-xl hover:from-emerald-400 hover:to-teal-400 transition-all hover:scale-105 active:scale-95 relative"
+                  disabled={loadingCategories}
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-20 py-4 rounded-full text-base font-semibold shadow-xl hover:from-emerald-400 hover:to-teal-400 transition-all hover:scale-105 active:scale-95 relative disabled:opacity-50"
                 >
-                  {selectedCategory || "Select A Product Category"}
+                  {loadingCategories ? "Loading..." : (selectedCategory || "Select A Product Category")}
                 </button>
                 
                 {/* Category Dropdown */}
-                {showCategoryDropdown && (
+                {showCategoryDropdown && !loadingCategories && (
                   <div className="absolute top-full mt-2 bg-white rounded-xl shadow-2xl z-50 w-72 max-h-80 overflow-y-auto border border-gray-200 animate-dropdownOpen">
-                    {productCategories.map((category, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleCategorySelect(category)}
-                        className="w-full text-left px-6 py-4 hover:bg-emerald-50 hover:pl-8 transition-all text-slate-700 text-base border-b border-gray-100 last:border-b-0 flex items-center gap-3 group"
-                      >
-                        <span className="text-2xl opacity-70 group-hover:opacity-100 transition-opacity">🍴</span>
-                        <span>{category}</span>
-                      </button>
-                    ))}
+                    {categories.length === 0 ? (
+                      <div className="px-6 py-4 text-slate-500 text-center">No categories available</div>
+                    ) : (
+                      categories.map((category, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleCategorySelect(category)}
+                          className="w-full text-left px-6 py-4 hover:bg-emerald-50 hover:pl-8 transition-all text-slate-700 text-base border-b border-gray-100 last:border-b-0 flex items-center gap-3 group"
+                        >
+                          <span className="text-2xl opacity-70 group-hover:opacity-100 transition-opacity">🍴</span>
+                          <span>{category}</span>
+                        </button>
+                      ))
+                    )}
                   </div>
                 )}
               </div>
@@ -229,24 +262,28 @@ export default function Compare() {
                   <div className="relative">
                     <button 
                       onClick={() => selectedCategory && setShowBrand1Dropdown(!showBrand1Dropdown)}
-                      disabled={!selectedCategory}
-                      className={`${!selectedCategory ? 'bg-gray-500/50 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 hover:scale-105 active:scale-95'} text-white px-16 py-4 rounded-full text-base font-semibold shadow-xl transition-all`}
+                      disabled={!selectedCategory || loadingBrands}
+                      className={`${!selectedCategory || loadingBrands ? 'bg-gray-500/50 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 hover:scale-105 active:scale-95'} text-white px-16 py-4 rounded-full text-base font-semibold shadow-xl transition-all`}
                     >
-                      {selectedBrand1 || "Brand 1"}
+                      {loadingBrands ? "Loading..." : (selectedBrand1 || "Brand 1")}
                     </button>
                     
                     {/* Brand 1 Dropdown */}
-                    {showBrand1Dropdown && selectedCategory && (
+                    {showBrand1Dropdown && selectedCategory && !loadingBrands && (
                       <div className="absolute top-full mt-2 bg-white rounded-xl shadow-2xl z-50 w-72 max-h-80 overflow-y-auto border border-gray-200 animate-dropdownOpen">
-                        {availableBrands.map((brand, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleBrand1Select(brand)}
-                            className="w-full text-left px-6 py-4 hover:bg-emerald-50 hover:pl-8 transition-all text-slate-700 text-base border-b border-gray-100 last:border-b-0"
-                          >
-                            {brand}
-                          </button>
-                        ))}
+                        {brands.length === 0 ? (
+                          <div className="px-6 py-4 text-slate-500 text-center">No brands available</div>
+                        ) : (
+                          brands.map((brand, index) => (
+                            <button
+                              key={index}
+                              onClick={() => handleBrand1Select(brand)}
+                              className="w-full text-left px-6 py-4 hover:bg-emerald-50 hover:pl-8 transition-all text-slate-700 text-base border-b border-gray-100 last:border-b-0"
+                            >
+                              {brand}
+                            </button>
+                          ))
+                        )}
                       </div>
                     )}
                   </div>
@@ -271,24 +308,28 @@ export default function Compare() {
                   <div className="relative">
                     <button 
                       onClick={() => selectedCategory && setShowBrand2Dropdown(!showBrand2Dropdown)}
-                      disabled={!selectedCategory}
-                      className={`${!selectedCategory ? 'bg-gray-500/50 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 hover:scale-105 active:scale-95'} text-white px-16 py-4 rounded-full text-base font-semibold shadow-xl transition-all`}
+                      disabled={!selectedCategory || loadingBrands}
+                      className={`${!selectedCategory || loadingBrands ? 'bg-gray-500/50 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 hover:scale-105 active:scale-95'} text-white px-16 py-4 rounded-full text-base font-semibold shadow-xl transition-all`}
                     >
-                      {selectedBrand2 || "Brand 2"}
+                      {loadingBrands ? "Loading..." : (selectedBrand2 || "Brand 2")}
                     </button>
                     
                     {/* Brand 2 Dropdown */}
-                    {showBrand2Dropdown && selectedCategory && (
+                    {showBrand2Dropdown && selectedCategory && !loadingBrands && (
                       <div className="absolute top-full mt-2 bg-white rounded-xl shadow-2xl z-50 w-72 max-h-80 overflow-y-auto border border-gray-200 animate-dropdownOpen">
-                        {availableBrands.map((brand, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleBrand2Select(brand)}
-                            className="w-full text-left px-6 py-4 hover:bg-emerald-50 hover:pl-8 transition-all text-slate-700 text-base border-b border-gray-100 last:border-b-0"
-                          >
-                            {brand}
-                          </button>
-                        ))}
+                        {brands.length === 0 ? (
+                          <div className="px-6 py-4 text-slate-500 text-center">No brands available</div>
+                        ) : (
+                          brands.map((brand, index) => (
+                            <button
+                              key={index}
+                              onClick={() => handleBrand2Select(brand)}
+                              className="w-full text-left px-6 py-4 hover:bg-emerald-50 hover:pl-8 transition-all text-slate-700 text-base border-b border-gray-100 last:border-b-0"
+                            >
+                              {brand}
+                            </button>
+                          ))
+                        )}
                       </div>
                     )}
                   </div>

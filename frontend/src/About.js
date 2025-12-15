@@ -157,9 +157,9 @@ export default function About() {
         {/* CTA Section */}
         <section className="text-center mt-16 pt-12 border-t border-slate-600/30 animate-fadeInUp" style={{ animationDelay: '1s' }}>
           <p className="text-slate-200 text-xl mb-6">Ready to explore cookware?</p>
-          <Link to="/compare">
+          <Link to="/home">
             <button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-12 py-4 rounded-full text-lg font-semibold shadow-2xl hover:from-emerald-400 hover:to-teal-400 transition-all transform hover:scale-110 hover:shadow-emerald-500/50">
-              Start Comparing →
+              Start Your Journey →
             </button>
           </Link>
         </section>

@@ -1,72 +1,68 @@
-const { chromium } = require("playwright");
-const Cookware = require("../models/Cookware.js");
+const scrapeAmazon = require("./baseScraper");
 
-const HAWKINS_URLS = [
-  { category: "Pressure Cooker", url: "https://buyhawkins.in/ProductDisplay.aspx?e=CKR1&" },
-  { category: "Fry Pan", url: "https://buyhawkins.in/ProductCookware.aspx?e=CWR1&f=FP" },
-  { category: "Dosa Tawa", url: "https://buyhawkins.in/ProductCookware.aspx?e=CWR1&f=TAVA" },
-];
+const mapCategory = require("../utils/categoryMapper");
+const detectMaterial = require("../utils/materialDetector");
+const detectBrand = require("../utils/brandDetector");
+const {
+  extractWeight,
+  extractDimensions,
+  extractReleaseYear,
+  extractRating,
+} = require("../utils/attributeExtractor");
 
-async function scrapeHawkins() {
-  console.log("\n🥄 Starting Hawkins scrape...\n");
+module.exports = async function scrapeHawkins() {
+  console.log("\n🔥 HAWKINS SCRAPER");
 
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
+  const products = await scrapeAmazon(
+    "https://www.amazon.in/s?k=hawkins+pressure+cooker",
+    "Hawkins"
+  );
 
-  let totalInserted = 0;
+  const cleanedProducts = products.map((p) => {
+    const title = p.title || "";
 
-  for (const { category, url } of HAWKINS_URLS) {
-    console.log(`📂 Hawkins → ${category}`);
-    await page.goto(url, { timeout: 60000, waitUntil: "networkidle" });
+    return {
+      title,
 
-    // wait until products appear
-    await page.waitForTimeout(3000);
+      brand: detectBrand(title) || "Hawkins",
 
-    const productSelectors = await page.$$(".productimage img");
+      category: mapCategory(title), // Pressure Cooker, Kadai, etc (or null)
 
-    if (productSelectors.length === 0) {
-      console.log("   ⚠ No products detected — skipping.");
-      continue;
-    }
+      releaseYear: extractReleaseYear(),
 
-    console.log(`   Found ${productSelectors.length} product thumbnails.`);
+      material: detectMaterial(title),
 
-    for (let i = 0; i < productSelectors.length; i++) {
-      await productSelectors[i].click();
-      await page.waitForTimeout(2500);
+      dimensions: extractDimensions(title),
 
-      const title = await page.$eval(".Productdetailstitle h4", el => el.innerText.trim()).catch(() => null);
-      const price = await page.$eval(".offerpricetext", el => parseInt(el.innerText.replace(/[^\d]/g, ""), 10)).catch(() => null);
-      const image = await page.$eval(".productimage img", el => el.src).catch(() => null);
+      weight: extractWeight(title),
 
-      if (!title) {
-        console.log("   ❌ Could not extract product — skipping.");
-        continue;
-      }
+      heatCompatibility:
+        title.toLowerCase().includes("induction")
+          ? "Gas, Induction"
+          : "Gas",
 
-      const exists = await Cookware.findOne({ title, brand: "Hawkins" });
+      durability: null, // manual later
+      efficiency: null, // manual later
+      specialFeatures: null, // manual later
 
-      if (!exists) {
-        await Cookware.create({
-          title,
-          brand: "Hawkins",
-          category,
-          price,
-          image,
-          sourceUrl: page.url(),
-          scrapedAt: new Date()
-        });
+      price: p.price ?? null, // RUPEES ONLY
 
-        totalInserted++;
-        console.log(`   ➕ Added: ${title}`);
-      } else {
-        console.log(`   ⚠ Exists: ${title}`);
-      }
-    }
-  }
+      rating: extractRating(), // random 3–5 ⭐
 
-  await browser.close();
-  console.log(`\n🎉 Hawkins scrape finished → ${totalInserted} products inserted.\n`);
-}
+      image: p.image || "",
 
-module.exports = scrapeHawkins;
+      sourceUrl: p.sourceUrl || "",
+
+      scrapedAt: new Date(),
+    };
+  });
+
+  // ❗ Only remove products where category is STILL null
+  const finalProducts = cleanedProducts.filter(
+    (p) => p.category !== null
+  );
+
+  console.log(`✅ Hawkins: ${finalProducts.length} products ready`);
+
+  return finalProducts;
+};

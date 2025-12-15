@@ -10,12 +10,12 @@ const {
   extractRating,
 } = require("../utils/attributeExtractor");
 
-module.exports = async function scrapePigeon() {
-  console.log("\n🐦 PIGEON SCRAPER");
+module.exports = async function scrapeButterfly() {
+  console.log("\n🦋 BUTTERFLY SCRAPER");
 
   const products = await scrapeAmazon(
-    "https://www.amazon.in/s?k=pigeon+cookware",
-    "Pigeon"
+    "https://www.amazon.in/s?k=butterfly+pressure+cooker",
+    "Butterfly"
   );
 
   const cleanedProducts = products.map((p) => {
@@ -24,7 +24,7 @@ module.exports = async function scrapePigeon() {
     return {
       title,
 
-      brand: detectBrand(title) || "Pigeon",
+      brand: detectBrand(title) || "Butterfly",
 
       category: mapCategory(title), // Pressure Cooker, Kadai, etc (or null)
 
@@ -62,7 +62,7 @@ module.exports = async function scrapePigeon() {
     (p) => p.category !== null
   );
 
-  console.log(`✅ Pigeon: ${finalProducts.length} products ready`);
+  console.log(`✅ Butterfly: ${finalProducts.length} products ready`);
 
   return finalProducts;
 };

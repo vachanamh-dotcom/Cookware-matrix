@@ -1,65 +1,43 @@
 // Home.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, Flame, TrendingUp, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logo from "./Assets/logo.png";
 import { useAuth } from "./App";
+import { formatPrice, getImage } from "./utils/formatters";
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth(); // only care about 'user' here
+  const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [trendingItems, setTrendingItems] = useState([]);
 
-  const categories = [
-    { name: "Microwave", icon: "📻", gradient: "from-purple-500 to-pink-500" },
-    { name: "Pressure Cooker", icon: "🍲", gradient: "from-blue-500 to-cyan-500" },
-    { name: "Frying Pan", icon: "🍳", gradient: "from-yellow-500 to-orange-500" },
-    { name: "Sauce Pan", icon: "🥘", gradient: "from-red-500 to-pink-500" },
-    { name: "Wok", icon: "🥟", gradient: "from-emerald-500 to-teal-500" },
-    { name: "Kadai", icon: "🍛", gradient: "from-orange-500 to-red-500" },
-    { name: "Tawa", icon: "🫓", gradient: "from-amber-500 to-yellow-500" },
-    { name: "Steamer", icon: "🥢", gradient: "from-green-500 to-emerald-500" }
+  // Fixed categories list
+  const FIXED_CATEGORIES = [
+    { name: "Pressure Cooker", emoji: "🍲" },
+    { name: "Frying Pan", emoji: "🍳" },
+    { name: "Sauce Pan", emoji: "🥘" },
+    { name: "Kadai", emoji: "🍛" },
+    { name: "Dosa Tawa", emoji: "🫓" },
+    { name: "Paddu Pan", emoji: "🟤" }
   ];
 
-  const trendingItems = [
-    {
-      name: "Premium Non-Stick Frying Pan",
-      brand: "CookPro Elite",
-      rating: 4.8,
-      reviews: 2847,
-      price: "₹2,499",
-      image: "🍳",
-      badge: "Best Seller"
-    },
-    {
-      name: "Stainless Steel Pressure Cooker",
-      brand: "Hawkins Futura",
-      rating: 4.7,
-      reviews: 1923,
-      price: "₹3,299",
-      image: "🍲",
-      badge: "Top Rated"
-    },
-    {
-      name: "Cast Iron Kadai",
-      brand: "Lodge Classic",
-      rating: 4.9,
-      reviews: 3156,
-      price: "₹1,899",
-      image: "🍛",
-      badge: "Customer Favorite"
-    },
-    {
-      name: "Multi-Purpose Wok",
-      brand: "Asian Chef Pro",
-      rating: 4.6,
-      reviews: 1456,
-      price: "₹1,599",
-      image: "🥟",
-      badge: "New Arrival"
-    }
-  ];
+  // Fetch categories from backend (now just sets fixed list)
+  useEffect(() => {
+    setCategories(FIXED_CATEGORIES);
+  }, []);
+
+  // Fetch trending products from backend
+  useEffect(() => {
+    fetch("http://localhost:5000/api/cookware")
+      .then(res => res.json())
+      .then(data => {
+        setTrendingItems(data.slice(0, 4)); // top 4 products
+      })
+      .catch(err => console.error("Error fetching trending items:", err));
+  }, []);
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -125,7 +103,6 @@ export default function HomePage() {
           
           {/* User Authentication Section */}
           {!user ? (
-            // Show Sign Up button when user is not logged in (regardless of isSkipped)
             <button
               onClick={() => navigate('/auth')}
               className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-2 rounded-full text-sm font-semibold hover:from-emerald-400 hover:to-teal-400 transition-all transform hover:scale-105 shadow-lg"
@@ -133,7 +110,6 @@ export default function HomePage() {
               Sign Up
             </button>
           ) : (
-            // Show user icon if logged in
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -210,20 +186,27 @@ export default function HomePage() {
             <h2 className="text-3xl font-bold text-white">Browse by Category</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {categories.map((category, index) => (
-              <button
-                key={index}
-                onClick={() => handleCategoryClick(category.name)}
-                className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all transform hover:scale-105 hover:shadow-2xl animate-fadeInUp"
-                style={{ animationDelay: `${0.5 + index * 0.1}s` }}
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${category.gradient} opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity`}></div>
-                <div className="relative text-center">
-                  <div className="text-5xl mb-3">{category.icon}</div>
-                  <h3 className="text-white font-semibold text-lg">{category.name}</h3>
-                </div>
-              </button>
-            ))}
+            {categories.length > 0 ? (
+              categories.map((cat, index) => (
+                <button
+                  key={cat.name}
+                  onClick={() => handleCategoryClick(cat.name)}
+                  className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all transform hover:scale-105 hover:shadow-2xl animate-fadeInUp"
+                  style={{ animationDelay: `${0.5 + index * 0.1}s` }}
+                >
+                  <div className="relative text-center">
+                    <div className="text-5xl mb-3">
+                      {cat.emoji}
+                    </div>
+                    <h3 className="text-white font-semibold text-lg">{cat.name}</h3>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="col-span-4 text-center text-slate-400 py-8">
+                Loading categories...
+              </div>
+            )}
           </div>
         </div>
 
@@ -234,55 +217,63 @@ export default function HomePage() {
             <h2 className="text-3xl font-bold text-white">Trending Cookware</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {trendingItems.map((item, index) => (
-              <div
-                key={index}
-                className="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all transform hover:scale-105 hover:shadow-2xl animate-fadeInUp cursor-pointer"
-                style={{ animationDelay: `${0.7 + index * 0.1}s` }}
-              >
-                {/* Badge */}
-                <div className="flex justify-between items-start mb-4">
-                  <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1 rounded-full font-semibold">
-                    {item.badge}
-                  </span>
-                </div>
-
-                {/* Product Image */}
-                <div className="text-center mb-4">
-                  <div className="text-7xl mb-2 transform group-hover:scale-110 transition-transform">
-                    {item.image}
+            {trendingItems.length > 0 ? (
+              trendingItems.map((item, index) => (
+                <div
+                  key={item._id || index}
+                  className="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all transform hover:scale-105 hover:shadow-2xl animate-fadeInUp cursor-pointer"
+                  style={{ animationDelay: `${0.7 + index * 0.1}s` }}
+                >
+                  {/* Product Image */}
+                  <div className="text-center mb-4">
+                    <img
+                      src={getImage(item.image)}
+                      alt={item.title}
+                      className="w-32 h-32 object-contain mx-auto mb-3 transform group-hover:scale-110 transition-transform"
+                      onError={(e) => {
+                        e.target.src = "/placeholder.png";
+                        e.target.onerror = null;
+                      }}
+                    />
                   </div>
-                </div>
 
-                {/* Product Info */}
-                <div className="space-y-2">
-                  <h3 className="text-white font-bold text-lg leading-tight">{item.name}</h3>
-                  <p className="text-slate-400 text-sm">{item.brand}</p>
-                  
-                  {/* Rating */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center">
-                      <span className="text-yellow-400 text-lg">★</span>
-                      <span className="text-white font-semibold ml-1">{item.rating}</span>
+                  {/* Product Info */}
+                  <div className="space-y-2">
+                    <h3 className="text-white font-bold text-lg leading-tight">{item.title}</h3>
+                    <p className="text-slate-400 text-sm">{item.brand}</p>
+                    
+                    {/* Rating */}
+                    {item.rating && (
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center">
+                          <span className="text-yellow-400 text-lg">★</span>
+                          <span className="text-white font-semibold ml-1">{item.rating}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Price */}
+                    <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                      <span className="text-emerald-400 font-bold text-xl">
+                        {formatPrice(item.price)}
+                      </span>
+                      <button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-emerald-400 hover:to-teal-400 transition-all transform hover:scale-105">
+                        View
+                      </button>
                     </div>
-                    <span className="text-slate-500 text-sm">({item.reviews})</span>
-                  </div>
-
-                  {/* Price */}
-                  <div className="flex items-center justify-between pt-3 border-t border-white/10">
-                    <span className="text-emerald-400 font-bold text-xl">{item.price}</span>
-                    <button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-emerald-400 hover:to-teal-400 transition-all transform hover:scale-105">
-                      View
-                    </button>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="col-span-4 text-center text-slate-400 py-8">
+                Loading trending products...
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
 
-      {/* Animations style (same as before) */}
+      {/* Animations style */}
       <style>{`
         @keyframes slideDown {
           from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); }
