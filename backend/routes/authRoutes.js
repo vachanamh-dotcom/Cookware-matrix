@@ -10,13 +10,17 @@ const router = express.Router();
 // ===============================
 router.post("/signup", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    let { name, email, password } = req.body;
+
+    // ✅ Normalize email
+    email = email.toLowerCase().trim();
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    // ✅ Hash password once
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
@@ -33,7 +37,11 @@ router.post("/signup", async (req, res) => {
 
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email }
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -45,13 +53,17 @@ router.post("/signup", async (req, res) => {
 // ===============================
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+
+    // ✅ Normalize email
+    email = email.toLowerCase().trim();
 
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    // ✅ Correct password comparison
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
@@ -65,7 +77,11 @@ router.post("/login", async (req, res) => {
 
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email }
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

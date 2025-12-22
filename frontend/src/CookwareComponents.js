@@ -1,48 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-/*
-  This file contains all the individual components for each page.
-  The ProductsPage has been updated with basic logic to fetch data from your API.
-*/
-
 // --- 1. Utility Components ---
 
 // Reusable loader component
 const Loader = () => (
-    <div className="flex justify-center items-center p-8">
-        <svg className="animate-spin h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        <span className="ml-3 text-red-600">Loading Cookware...</span>
+  <div className="flex flex-col justify-center items-center p-8 animate-fadeIn">
+    <div className="relative">
+      <div className="w-16 h-16 border-4 border-orange-200 border-t-amber-500 rounded-full animate-spin"></div>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-2xl">🍳</span>
+      </div>
     </div>
+    <span className="mt-4 text-amber-100 font-semibold text-lg">Loading Amazing Cookware...</span>
+  </div>
 );
 
 // Reusable full-page content container
-const ContentPage = ({ title, children, color }) => (
-  <div className={`bg-white p-8 rounded-lg shadow-xl border-t-8 ${color}`}>
-    <h1 className="text-3xl font-bold text-gray-800 mb-6 border-b pb-3">{title}</h1>
-    <div className="space-y-4">
+const ContentPage = ({ title, children }) => (
+  <div className="bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border-2 border-orange-400/40 p-8 rounded-3xl shadow-2xl animate-scaleIn">
+    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-t-3xl"></div>
+    <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-red-400 mb-6 pb-3 border-b-2 border-orange-400/30 animate-gradient">
+      {title}
+    </h1>
+    <div className="space-y-4 text-amber-100">
       {children}
     </div>
   </div>
 );
 
 // Reusable component for displaying basic product placeholders
-const ProductDisplay = ({ title, color }) => (
-  <div className={`w-32 h-32 ${color} rounded-lg flex items-center justify-center text-sm font-semibold text-gray-700 shadow-md`}>
-    {title}
+const ProductDisplay = ({ title, emoji }) => (
+  <div className="group relative bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border-2 border-orange-400/40 rounded-2xl p-6 flex flex-col items-center justify-center shadow-xl hover:scale-110 hover:border-amber-400/60 transition-all duration-300 cursor-pointer">
+    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-t-2xl"></div>
+    <div className="text-5xl mb-3 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300">{emoji}</div>
+    <p className="text-sm font-semibold text-amber-100 text-center">{title}</p>
   </div>
 );
 
 // Component for selection dropdowns
 const SelectionBox = ({ label, options }) => (
-  <div className="flex flex-col space-y-1">
-    <label className="text-sm font-medium text-gray-600">{label}</label>
-    <select className="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500">
+  <div className="flex flex-col space-y-2">
+    <label className="text-sm font-semibold text-amber-200 flex items-center gap-2">
+      <span className="text-lg">🔍</span>
+      {label}
+    </label>
+    <select className="p-3 bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border-2 border-orange-400/40 rounded-xl shadow-lg text-amber-100 font-medium focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all hover:border-amber-400/60">
       {options.map((option, index) => (
-        <option key={index} value={option}>
+        <option key={index} value={option} className="bg-orange-950">
           {option}
         </option>
       ))}
@@ -51,76 +56,154 @@ const SelectionBox = ({ label, options }) => (
 );
 
 // Component for displaying a single product card
-const ProductCard = ({ product }) => (
-  <div className="border border-gray-200 rounded-lg p-3 text-center shadow-sm hover:shadow-lg transition duration-150 bg-white transform hover:scale-[1.02]">
-    <div className="w-full h-20 bg-red-100 rounded mb-2 flex items-center justify-center text-red-700 font-bold">
-      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm1 13a1 1 0 11-2 0 1 1 0 012 0zm0-4a1 1 0 11-2 0 1 1 0 012 0z" />
-      </svg>
+const ProductCard = ({ product, index }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), index * 100);
+    return () => clearTimeout(timer);
+  }, [index]);
+
+  return (
+    <div className={`relative group bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border-2 border-orange-400/40 rounded-3xl p-5 text-center shadow-2xl hover:border-amber-400/60 hover:scale-105 transition-all duration-300 transform ${
+      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+    }`}>
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-t-3xl"></div>
+      
+      <div className="w-full h-24 bg-gradient-to-br from-orange-800/30 to-red-800/30 rounded-xl mb-3 flex items-center justify-center border border-orange-400/20 group-hover:scale-110 transition-transform">
+        <div className="text-5xl group-hover:rotate-12 transition-transform duration-300">🍳</div>
+      </div>
+      
+      <p className="text-base font-bold text-amber-100 mb-1">{product.title}</p>
+      <p className="text-sm text-orange-200/80 mb-2">{product.brand}</p>
+      <p className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400 mb-3">
+        ₹{product.price}
+      </p>
+      
+      <Link 
+        to={`/compare/${product._id}`} 
+        className="inline-block bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-xs font-bold hover:from-amber-400 hover:via-orange-400 hover:to-red-400 transition-all transform hover:scale-105 shadow-lg border border-amber-300/50"
+      >
+        View Details →
+      </Link>
     </div>
-    <p className="text-base font-semibold text-gray-800">{product.title}</p>
-    <p className="text-sm text-gray-500">{product.brand}</p>
-    <p className="text-lg font-bold text-red-600 mt-1">₹{product.price}</p>
-    <Link to={`/compare/${product._id}`} className="text-xs text-blue-600 hover:underline mt-1 block">
-      View Details
-    </Link>
-  </div>
-);
+  );
+};
 
 const ComparisonHeader = ({ title, subtitle }) => (
-  <div className="text-center">
-    <h2 className="text-xl font-bold text-red-700">{title}</h2>
-    <p className="text-sm text-gray-500">{subtitle}</p>
+  <div className="text-center bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border-2 border-orange-400/40 rounded-2xl p-4 shadow-xl">
+    <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400">{title}</h2>
+    <p className="text-sm text-orange-200/80 mt-1">{subtitle}</p>
   </div>
 );
-
 
 // --- 2. Page Components (Main UI) ---
 
 // Home Page (Main Landing Page)
-export const HomePage = () => (
-  <div className="text-center p-12 bg-white rounded-lg shadow-xl border-t-8 border-red-700">
-    <h1 className="text-6xl font-extrabold text-red-700 mb-4 tracking-wider">
-      COOKWARE MATRIX
-    </h1>
-    <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-      Discover your perfect match for kitchen gadgets and cookware based on brand, features, and budget.
-    </p>
-    
-    <div className="mt-8">
-      <Link 
-        to="/products"
-        className="inline-block bg-red-700 text-white py-3 px-8 text-lg font-bold rounded-full shadow-lg hover:bg-red-600 transition duration-200 transform hover:scale-105"
-      >
-        Let's Get Started
-      </Link>
-    </div>
+export const HomePage = () => {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
-    <div className="mt-12 flex justify-center space-x-10">
-      <ProductDisplay title="Pressure Cooker" color="bg-gray-300" />
-      <ProductDisplay title="Rice Cooker" color="bg-gray-300" />
-      <ProductDisplay title="Induction Top" color="bg-gray-300" />
-    </div>
-  </div>
-);
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 20 - 10,
+        y: (e.clientY / window.innerHeight) * 20 - 10
+      });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
+  return (
+    <div className="relative text-center p-12 bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border-2 border-orange-400/40 rounded-3xl shadow-2xl overflow-hidden animate-scaleIn">
+      {/* Background blobs */}
+      <div 
+        className="absolute top-10 left-10 w-64 h-64 bg-orange-500/20 rounded-full blur-3xl animate-pulse"
+        style={{ transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)` }}
+      ></div>
+      <div 
+        className="absolute bottom-10 right-10 w-64 h-64 bg-amber-500/20 rounded-full blur-3xl animate-pulse"
+        style={{ animationDelay: '1s', transform: `translate(${-mousePosition.x}px, ${-mousePosition.y}px)` }}
+      ></div>
+
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-t-3xl"></div>
+      
+      <div className="relative z-10">
+        <h1 className="text-6xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-red-400 mb-6 tracking-wider animate-gradient drop-shadow-2xl">
+          COOKWARE MATRIX
+        </h1>
+        <p className="text-xl text-amber-100 max-w-2xl mx-auto mb-8 drop-shadow-lg">
+          Discover your perfect match for kitchen gadgets and cookware based on brand, features, and budget.
+        </p>
+        
+        <div className="mt-8">
+          <Link 
+            to="/products"
+            className="inline-flex items-center gap-3 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white py-4 px-10 text-lg font-bold rounded-full shadow-2xl hover:from-amber-400 hover:via-orange-400 hover:to-red-400 transition-all duration-300 transform hover:scale-110 border-2 border-amber-300/50"
+          >
+            <span className="text-2xl">🚀</span>
+            Let's Get Started
+          </Link>
+        </div>
+
+        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+          <ProductDisplay title="Pressure Cooker" emoji="🍲" />
+          <ProductDisplay title="Rice Cooker" emoji="🍚" />
+          <ProductDisplay title="Induction Top" emoji="🔥" />
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 3s ease infinite;
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.8s ease-out;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.6s ease-out;
+        }
+      `}</style>
+    </div>
+  );
+};
 
 // Products Page (Let's Get Started - Selection Page)
 export const ProductsPage = () => {
-  // 1. State to hold the fetched data
   const [cookwareList, setCookwareList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
-  // 2. useEffect hook to fetch data when the component mounts
   useEffect(() => {
-    // The asynchronous function to handle the API call
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 20 - 10,
+        y: (e.clientY / window.innerHeight) * 20 - 10
+      });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  useEffect(() => {
     const fetchCookware = async () => {
       try {
-        // Send GET request to your Express API running on port 5000
         const response = await fetch('http://localhost:5000/api/cookware');
         
-        // Handle HTTP errors (e.g., 404 or 500)
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -128,7 +211,6 @@ export const ProductsPage = () => {
         const data = await response.json();
         setCookwareList(data);
       } catch (e) {
-        // Handle network errors or other exceptions
         console.error("Failed to fetch cookware:", e);
         setError("Failed to load products. Is the backend server running?");
       } finally {
@@ -137,109 +219,275 @@ export const ProductsPage = () => {
     };
 
     fetchCookware();
-  }, []); // Empty array means this effect runs only once after the first render
+  }, []);
 
-  // 3. Conditional Rendering based on state
-  if (loading) return <Loader />;
-  if (error) return <div className="text-center p-8 text-red-500 font-semibold">{error}</div>;
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader />
+    </div>
+  );
+  
+  if (error) return (
+    <div className="text-center p-8 bg-red-900/30 border-2 border-red-500/50 rounded-2xl backdrop-blur-xl animate-fadeIn">
+      <p className="text-red-300 font-semibold text-lg">⚠️ {error}</p>
+    </div>
+  );
 
-
-  // 4. Render the page with fetched data
   return (
-    <div className="bg-white p-6 rounded-lg shadow-xl border-t-8 border-red-700">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Discover Your Perfect Match</h1>
+    <div className="relative bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border-2 border-orange-400/40 p-6 rounded-3xl shadow-2xl overflow-hidden animate-scaleIn">
+      {/* Background blobs */}
+      <div 
+        className="absolute top-10 left-10 w-64 h-64 bg-orange-500/20 rounded-full blur-3xl animate-pulse"
+        style={{ transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)` }}
+      ></div>
+      <div 
+        className="absolute bottom-10 right-10 w-64 h-64 bg-amber-500/20 rounded-full blur-3xl animate-pulse"
+        style={{ animationDelay: '1s', transform: `translate(${-mousePosition.x}px, ${-mousePosition.y}px)` }}
+      ></div>
+
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-t-3xl"></div>
       
-      <div className="flex space-x-6 mb-8">
-        <SelectionBox label="Select Item" options={['All', 'Frying Pan', 'Pressure Cooker']} />
-        <SelectionBox label="Select Brand" options={['All', 'Prestige', 'Hawkins', 'Pigeon']} />
-        <button className="bg-red-600 text-white px-6 rounded-lg shadow hover:bg-red-700 self-end h-10">
-          Filter
-        </button>
+      <div className="relative z-10">
+        <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-red-400 mb-6 pb-2 border-b-2 border-orange-400/30 animate-gradient flex items-center gap-3">
+          <span className="text-3xl">✨</span>
+          Discover Your Perfect Match
+        </h1>
+        
+        <div className="flex flex-col md:flex-row gap-4 mb-8 bg-gradient-to-br from-orange-950/40 to-red-950/40 backdrop-blur-sm p-6 rounded-2xl border border-orange-400/30">
+          <SelectionBox label="Select Item" options={['All', 'Frying Pan', 'Pressure Cooker']} />
+          <SelectionBox label="Select Brand" options={['All', 'Prestige', 'Hawkins', 'Pigeon']} />
+          <button className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white px-8 rounded-xl shadow-2xl hover:from-amber-400 hover:via-orange-400 hover:to-red-400 self-end h-12 font-bold transition-all transform hover:scale-105 border-2 border-amber-300/50 flex items-center gap-2 justify-center">
+            <span className="text-lg">🔍</span>
+            Filter
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {cookwareList.length > 0 ? (
+            cookwareList.map((product, index) => (
+              <ProductCard key={product._id} product={product} index={index} />
+            ))
+          ) : (
+            <div className="col-span-5 text-center p-12 bg-gradient-to-br from-orange-950/40 to-red-950/40 backdrop-blur-sm rounded-2xl border-2 border-orange-400/30">
+              <div className="text-6xl mb-4">🔍</div>
+              <p className="text-amber-100 text-lg font-semibold">No products found</p>
+              <p className="text-orange-200/80 text-sm mt-2">Did you run the /api/cookware/seed endpoint?</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Product Cards Grid - Populated with fetched data */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        {cookwareList.length > 0 ? (
-          cookwareList.map((product) => (
-            <ProductCard key={product._id} product={product} />
-          ))
-        ) : (
-          <p className="col-span-5 text-center text-gray-500 p-8">No products found. Did you run the /api/cookware/seed endpoint?</p>
-        )}
-      </div>
+      <style>{`
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 3s ease infinite;
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.8s ease-out;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.6s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
-
 
 // Comparison Page (Side-by-Side Matrix)
 export const ComparePage = () => {
-  // Hardcoded structure for the comparison matrix based on the wireframe
   const attributes = [
-    { label: 'Title', value1: 'Prestige Cooker', value2: 'Pigeon Cooker' },
-    { label: 'Brand', value1: 'Prestige', value2: 'Pigeon' },
-    { label: 'Price (Approx)', value1: '₹1500', value2: '₹1200' },
-    { label: 'Material', value1: 'Stainless Steel', value2: 'Aluminium' },
-    { label: 'Weight', value1: '2.5kg', value2: '2.2kg' },
-    { label: 'Heat Compatibility', value1: 'Gas, Electric', value2: 'Gas, Induction' },
-    { label: 'Durability', value1: 'High', value2: 'Medium' },
-    { label: 'Special Features', value1: 'Ergonomic Handle', value2: 'Safety Valve' },
+    { label: 'Title', value1: 'Prestige Cooker', value2: 'Pigeon Cooker', icon: '📝' },
+    { label: 'Brand', value1: 'Prestige', value2: 'Pigeon', icon: '🏷️' },
+    { label: 'Price (Approx)', value1: '₹1500', value2: '₹1200', icon: '💰' },
+    { label: 'Material', value1: 'Stainless Steel', value2: 'Aluminium', icon: '🔨' },
+    { label: 'Weight', value1: '2.5kg', value2: '2.2kg', icon: '⚖️' },
+    { label: 'Heat Compatibility', value1: 'Gas, Electric', value2: 'Gas, Induction', icon: '🔥' },
+    { label: 'Durability', value1: 'High', value2: 'Medium', icon: '💪' },
+    { label: 'Special Features', value1: 'Ergonomic Handle', value2: 'Safety Valve', icon: '✨' },
   ];
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-xl border-t-8 border-red-700">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Comparison Matrix (Sample Data)</h1>
+    <div className="relative bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border-2 border-orange-400/40 p-6 rounded-3xl shadow-2xl animate-scaleIn overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-t-3xl"></div>
       
-      <div className="flex justify-around items-center mb-8 bg-red-100 p-4 rounded-lg">
+      <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-red-400 mb-6 pb-2 border-b-2 border-orange-400/30 animate-gradient flex items-center gap-3">
+        <span className="text-3xl">⚡</span>
+        Comparison Matrix
+      </h1>
+      
+      <div className="flex flex-col md:flex-row justify-around items-center gap-4 mb-8 bg-gradient-to-br from-orange-950/40 to-red-950/40 backdrop-blur-sm p-6 rounded-2xl border border-orange-400/30">
         <ComparisonHeader title="Product 1" subtitle="Current Selection" />
-        <span className="text-3xl font-bold text-red-700">VS</span>
+        <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400 animate-pulse">VS</div>
         <ComparisonHeader title="Product 2" subtitle="Current Selection" />
       </div>
 
-      <div className="w-full">
+      <div className="w-full rounded-2xl overflow-hidden border-2 border-orange-400/30 shadow-xl">
         {attributes.map((attr, index) => (
-          <div key={index} className={`flex ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} border-b`}>
-            <div className="w-1/3 p-3 font-semibold text-gray-700">{attr.label}</div>
-            <div className="w-1/3 p-3 text-red-700 font-medium">{attr.value1}</div>
-            <div className="w-1/3 p-3 text-red-700 font-medium">{attr.value2}</div>
+          <div 
+            key={index} 
+            className={`flex flex-col md:flex-row ${
+              index % 2 === 0 
+                ? 'bg-gradient-to-br from-orange-950/30 to-red-950/30' 
+                : 'bg-gradient-to-br from-orange-900/20 to-red-900/20'
+            } border-b border-orange-400/20 last:border-b-0 backdrop-blur-sm hover:bg-orange-800/30 transition-all`}
+          >
+            <div className="w-full md:w-1/3 p-4 font-bold text-amber-200 flex items-center gap-2 border-b md:border-b-0 md:border-r border-orange-400/20">
+              <span className="text-xl">{attr.icon}</span>
+              {attr.label}
+            </div>
+            <div className="w-full md:w-1/3 p-4 text-amber-100 font-semibold border-b md:border-b-0 md:border-r border-orange-400/20">{attr.value1}</div>
+            <div className="w-full md:w-1/3 p-4 text-amber-100 font-semibold">{attr.value2}</div>
           </div>
         ))}
       </div>
-      
+
+      <style>{`
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 3s ease infinite;
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.8s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
 
-
 // About Page
 export const AboutPage = () => (
-  <ContentPage title="About Cookware Matrix" color="border-red-700">
-    <p className="text-gray-700">
-      Welcome to Cookware Matrix, where we believe in fostering a right cookware appreciation and usage. 
+  <ContentPage title="About Cookware Matrix">
+    <p className="text-lg leading-relaxed">
+      Welcome to Cookware Matrix, where we believe in fostering right cookware appreciation and usage. 
       Our mission is to simplify the complex buying process for kitchen enthusiasts and beginners alike. 
       We provide unbiased comparisons on essential attributes like material quality, heat conductivity, and durability.
     </p>
-    <h3 className="text-xl font-semibold mt-6 mb-3">Our Core Principles</h3>
-    <ul className="list-disc list-inside space-y-2 text-gray-600">
-      <li>**Sustainability:** Promoting durable cookware to reduce environmental waste.</li>
-      <li>**Transparency:** Providing clear, verifiable data for honest comparison.</li>
-      <li>**Usability:** Creating an intuitive interface, even for non-tech-savvy users.</li>
+    <h3 className="text-2xl font-bold mt-8 mb-4 text-amber-200 flex items-center gap-2">
+      <span className="text-2xl">🎯</span>
+      Our Core Principles
+    </h3>
+    <ul className="space-y-4">
+      <li className="flex items-start gap-3 bg-orange-950/30 p-4 rounded-xl border border-orange-400/20">
+        <span className="text-2xl">♻️</span>
+        <div>
+          <span className="font-bold text-amber-200">Sustainability:</span> Promoting durable cookware to reduce environmental waste.
+        </div>
+      </li>
+      <li className="flex items-start gap-3 bg-orange-950/30 p-4 rounded-xl border border-orange-400/20">
+        <span className="text-2xl">🔍</span>
+        <div>
+          <span className="font-bold text-amber-200">Transparency:</span> Providing clear, verifiable data for honest comparison.
+        </div>
+      </li>
+      <li className="flex items-start gap-3 bg-orange-950/30 p-4 rounded-xl border border-orange-400/20">
+        <span className="text-2xl">✨</span>
+        <div>
+          <span className="font-bold text-amber-200">Usability:</span> Creating an intuitive interface, even for non-tech-savvy users.
+        </div>
+      </li>
     </ul>
+    
+    <style>{`
+      @keyframes gradient {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+      }
+      .animate-gradient {
+        background-size: 200% 200%;
+        animation: gradient 3s ease infinite;
+      }
+      @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .animate-scaleIn {
+        animation: scaleIn 0.8s ease-out;
+      }
+    `}</style>
   </ContentPage>
 );
 
 // Help Page
 export const HelpPage = () => (
-  <ContentPage title="Help & User Guide" color="border-red-700">
-    <h3 className="text-xl font-semibold mb-3">How to Use the Matrix</h3>
-    <ul className="list-disc list-inside space-y-2 text-gray-700">
-      <li>**Step 1: Select Products** - Use the "Let's Get Started" page to search and select the two products you want to compare.</li>
-      <li>**Step 2: Compare** - Navigate to the "Comparison" page to view the side-by-side matrix of specifications and features.</li>
-      <li>**Data Sources:** Our information is sourced manually from product specifications and user reviews, validated by our internal team.</li>
+  <ContentPage title="Help & User Guide">
+    <h3 className="text-2xl font-bold mb-4 text-amber-200 flex items-center gap-2">
+      <span className="text-2xl">📖</span>
+      How to Use the Matrix
+    </h3>
+    <ul className="space-y-4">
+      <li className="flex items-start gap-3 bg-orange-950/30 p-4 rounded-xl border border-orange-400/20">
+        <span className="text-2xl font-bold text-amber-400">1</span>
+        <div>
+          <span className="font-bold text-amber-200">Select Products:</span> Use the "Let's Get Started" page to search and select the two products you want to compare.
+        </div>
+      </li>
+      <li className="flex items-start gap-3 bg-orange-950/30 p-4 rounded-xl border border-orange-400/20">
+        <span className="text-2xl font-bold text-amber-400">2</span>
+        <div>
+          <span className="font-bold text-amber-200">Compare:</span> Navigate to the "Comparison" page to view the side-by-side matrix of specifications and features.
+        </div>
+      </li>
+      <li className="flex items-start gap-3 bg-orange-950/30 p-4 rounded-xl border border-orange-400/20">
+        <span className="text-2xl">📊</span>
+        <div>
+          <span className="font-bold text-amber-200">Data Sources:</span> Our information is sourced manually from product specifications and user reviews, validated by our internal team.
+        </div>
+      </li>
     </ul>
-    <h3 className="text-xl font-semibold mt-6 mb-3">Contact Support</h3>
-    <p className="text-gray-700">
-      If you find any discrepancies in the data or require technical assistance, please email us at: <a href="mailto:support@cookwarematrix.com" className="text-blue-600 hover:underline">support@cookwarematrix.com</a>.
-    </p>
+    
+    <h3 className="text-2xl font-bold mt-8 mb-4 text-amber-200 flex items-center gap-2">
+      <span className="text-2xl">📧</span>
+      Contact Support
+    </h3>
+    <div className="bg-orange-950/30 p-6 rounded-xl border border-orange-400/20">
+      <p className="mb-3">
+        If you find any discrepancies in the data or require technical assistance, please email us at:
+      </p>
+      <a 
+        href="mailto:support@cookwarematrix.com" 
+        className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white px-6 py-3 rounded-full font-bold hover:from-amber-400 hover:via-orange-400 hover:to-red-400 transition-all transform hover:scale-105 shadow-lg border border-amber-300/50"
+      >
+        <span className="text-lg">✉️</span>
+        support@cookwarematrix.com
+      </a>
+    </div>
+    
+    <style>{`
+      @keyframes gradient {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+      }
+      .animate-gradient {
+        background-size: 200% 200%;
+        animation: gradient 3s ease infinite;
+      }
+      @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .animate-scaleIn {
+        animation: scaleIn 0.8s ease-out;
+      }
+    `}</style>
   </ContentPage>
 );

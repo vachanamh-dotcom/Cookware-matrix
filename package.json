@@ -7,7 +7,8 @@
     "lucide-react": "^0.555.0",
     "mongoose": "^9.0.0",
     "pdf-parse": "^2.4.5",
-    "playwright": "^1.57.0"
+    "playwright": "^1.57.0",
+    "react-snowfall": "^2.4.0"
   },
   "proxy": "http://localhost:5000"
 }

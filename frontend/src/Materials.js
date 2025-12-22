@@ -1,12 +1,52 @@
 // Materials.js
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Sparkles, CheckCircle, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Snowfall from "react-snowfall";
 import logo from "./Assets/logo.png";
 
 export default function MaterialsPage() {
   const navigate = useNavigate();
   const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const detailsRef = useRef(null);
+
+  const handleMaterialClick = (material) => {
+    setSelectedMaterial(material);
+    // Scroll to details section after a short delay to allow state to update
+    setTimeout(() => {
+      if (detailsRef.current) {
+        detailsRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+    }, 100);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 20 - 10,
+        y: (e.clientY / window.innerHeight) * 20 - 10
+      });
+    };
+
+    const handleScroll = () => {
+      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const currentScroll = window.scrollY;
+      setScrollProgress((currentScroll / totalScroll) * 100);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   const materials = [
     {
@@ -202,132 +242,70 @@ export default function MaterialsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 font-sans relative overflow-hidden">
-      {/* Animated background blobs */}
-      <div className="absolute top-20 left-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-20 right-40 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-      <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+    <div className="min-h-screen bg-gradient-to-br from-amber-950 via-orange-900 to-red-950 font-sans relative overflow-hidden">
+      {/* Snowfall Effect */}
+      <Snowfall
+        color="#fbbf24"
+        snowflakeCount={100}
+        speed={[0.5, 1.5]}
+        wind={[-0.5, 1.0]}
+        radius={[0.5, 2.0]}
+        style={{
+          position: 'fixed',
+          width: '100vw',
+          height: '100vh',
+          zIndex: 1
+        }}
+      />
 
-      {/* Navigation */}
-      <nav className="relative z-20 flex justify-between items-center px-8 py-6 animate-slideDown">
-        <div className="flex items-center gap-3">
-          <img src={logo} alt="Cookware Matrix logo" className="w-16 h-16 drop-shadow-2xl" />
-          <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-300">
-            Cookware Materials
-          </h2>
-        </div>
-        <button
-          onClick={() => navigate('/home')}
-          className="flex items-center gap-2 text-white hover:text-purple-400 transition-all"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to Home
-        </button>
-      </nav>
-
-      {/* Main Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-8 py-12">
-        {/* Header */}
-        <div className="text-center mb-16 animate-scaleIn">
-          <div className="flex justify-center mb-6">
-            <Sparkles className="w-16 h-16 text-purple-400" />
-          </div>
-          <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-300 to-indigo-400 text-6xl font-bold leading-tight mb-4 drop-shadow-lg">
-            Know Your Materials
-          </h1>
-          <p className="text-slate-300 text-xl font-light max-w-3xl mx-auto">
-            Understanding cookware materials helps you make informed decisions for your kitchen. Each material has unique properties, advantages, and ideal use cases.
-          </p>
-        </div>
-
-        {/* Materials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {materials.map((material, index) => (
-            <button
-              key={material.id}
-              onClick={() => setSelectedMaterial(material)}
-              className={`group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all transform hover:scale-105 hover:shadow-2xl animate-fadeInUp text-left ${
-                selectedMaterial?.id === material.id ? 'ring-2 ring-purple-500' : ''
-              }`}
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <div className="text-6xl mb-4">{material.icon}</div>
-              <h3 className="text-white font-bold text-xl mb-2">{material.name}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">{material.description}</p>
-              <div className={`mt-4 text-transparent bg-clip-text bg-gradient-to-r ${material.gradient} font-semibold`}>
-                Learn More →
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Detailed View */}
-        {selectedMaterial && (
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-12 animate-fadeIn">
-            <div className="flex items-start gap-6 mb-8">
-              <div className="text-7xl">{selectedMaterial.icon}</div>
-              <div className="flex-1">
-                <h2 className={`text-transparent bg-clip-text bg-gradient-to-r ${selectedMaterial.gradient} text-4xl font-bold mb-2`}>
-                  {selectedMaterial.name}
-                </h2>
-                <p className="text-slate-300 text-lg">{selectedMaterial.description}</p>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Advantages */}
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <CheckCircle className="w-6 h-6 text-emerald-400" />
-                  <h3 className="text-emerald-400 font-bold text-2xl">Advantages</h3>
-                </div>
-                <ul className="space-y-3">
-                  {selectedMaterial.advantages.map((advantage, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <span className="text-emerald-400 mt-1">✓</span>
-                      <span className="text-slate-200 leading-relaxed">{advantage}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Disadvantages */}
-              <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <XCircle className="w-6 h-6 text-red-400" />
-                  <h3 className="text-red-400 font-bold text-2xl">Disadvantages</h3>
-                </div>
-                <ul className="space-y-3">
-                  {selectedMaterial.disadvantages.map((disadvantage, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <span className="text-red-400 mt-1">✗</span>
-                      <span className="text-slate-200 leading-relaxed">{disadvantage}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Best For */}
-            <div className="mt-8 bg-purple-500/10 border border-purple-500/30 rounded-2xl p-6">
-              <h3 className="text-purple-400 font-bold text-xl mb-3">Best Used For</h3>
-              <p className="text-slate-200 text-lg leading-relaxed">{selectedMaterial.bestFor}</p>
-            </div>
-          </div>
-        )}
-
-        {/* No Selection Prompt */}
-        {!selectedMaterial && (
-          <div className="text-center py-16 animate-fadeIn">
-            <p className="text-slate-400 text-xl">
-              👆 Click on any material above to learn more about its properties
-            </p>
-          </div>
-        )}
+      {/* Scroll Progress Bar */}
+      <div className="fixed top-0 left-0 right-0 h-1 bg-orange-950/50 z-50">
+        <div 
+          className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 transition-all duration-150"
+          style={{ width: `${scrollProgress}%` }}
+        ></div>
       </div>
 
-      {/* Animations */}
+      {/* Animated background blobs with mouse tracking */}
+      <div 
+        className="absolute top-20 left-20 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl animate-pulse"
+        style={{ transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)` }}
+      ></div>
+      <div 
+        className="absolute bottom-20 right-40 w-80 h-80 bg-amber-500/20 rounded-full blur-3xl animate-pulse" 
+        style={{ animationDelay: '1s', transform: `translate(${-mousePosition.x}px, ${-mousePosition.y}px)` }}
+      ></div>
+      <div className="absolute top-1/2 left-1/2 w-72 h-72 bg-red-500/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+
+      {/* Floating cookware icons */}
+      <div className="absolute top-10 left-10 text-6xl opacity-20 animate-floatSlow">🍳</div>
+      <div className="absolute top-32 right-20 text-5xl opacity-15 animate-floatMedium" style={{ animationDelay: '1s' }}>🔩</div>
+      <div className="absolute bottom-20 left-32 text-7xl opacity-10 animate-floatSlow" style={{ animationDelay: '2s' }}>⚫</div>
+      <div className="absolute top-1/2 right-10 text-4xl opacity-15 animate-floatMedium" style={{ animationDelay: '1.5s' }}>🏺</div>
+
       <style>{`
+        @keyframes floatSlow {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-30px) rotate(5deg); }
+        }
+        @keyframes floatMedium {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(-5deg); }
+        }
+        .animate-floatSlow {
+          animation: floatSlow 8s ease-in-out infinite;
+        }
+        .animate-floatMedium {
+          animation: floatMedium 6s ease-in-out infinite;
+        }
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 3s ease infinite;
+        }
         @keyframes slideDown {
           from { opacity: 0; transform: translateY(-20px); }
           to { opacity: 1; transform: translateY(0); }
@@ -344,12 +322,158 @@ export default function MaterialsPage() {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-
         .animate-slideDown { animation: slideDown 0.6s ease-out; }
         .animate-scaleIn { animation: scaleIn 0.8s ease-out; }
         .animate-fadeInUp { animation: fadeInUp 0.8s ease-out both; }
         .animate-fadeIn { animation: fadeIn 0.4s ease-out; }
       `}</style>
+
+      {/* Navigation */}
+      <nav className="relative z-20 flex flex-col md:flex-row justify-between items-center px-4 md:px-8 py-6 animate-slideDown gap-4">
+        <div className="flex items-center gap-3">
+          <img src={logo} alt="Cookware Matrix logo" className="w-16 h-16 drop-shadow-2xl hover:scale-110 transition-transform duration-300 cursor-pointer" />
+          <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-red-400 animate-gradient">
+            Cookware Materials
+          </h2>
+        </div>
+        <button
+          onClick={() => navigate('/home')}
+          className="flex items-center gap-2 text-amber-100 hover:text-amber-300 transition-all duration-300 hover:drop-shadow-[0_0_12px_rgba(251,191,36,0.8)] hover:scale-110 font-semibold"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Back to Home
+        </button>
+      </nav>
+
+      {/* Main Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-12">
+        {/* Header */}
+        <div className="text-center mb-16 animate-scaleIn">
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <Sparkles className="w-16 h-16 text-amber-400 animate-pulse" />
+              <div className="absolute inset-0 blur-xl bg-amber-400/30 animate-pulse"></div>
+            </div>
+          </div>
+          <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-red-400 text-5xl md:text-6xl font-bold leading-tight mb-4 drop-shadow-lg animate-gradient">
+            Know Your Materials
+          </h1>
+          <p className="text-amber-100 text-lg md:text-xl font-light max-w-3xl mx-auto leading-relaxed">
+            Understanding cookware materials helps you make informed decisions for your kitchen. Each material has unique properties, advantages, and ideal use cases.
+          </p>
+        </div>
+
+        {/* Materials Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {materials.map((material, index) => (
+            <button
+              key={material.id}
+              onClick={() => handleMaterialClick(material)}
+              className={`group relative bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border-2 rounded-2xl p-6 md:p-8 hover:from-orange-900/70 hover:to-red-900/70 transition-all transform hover:scale-105 hover:shadow-2xl animate-fadeInUp text-left ${
+                selectedMaterial?.id === material.id 
+                  ? 'border-amber-400/60 shadow-2xl shadow-amber-500/30' 
+                  : 'border-orange-400/40 hover:border-amber-400/60'
+              }`}
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500"></div>
+              <div className="text-5xl md:text-6xl mb-4 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300">{material.icon}</div>
+              <h3 className="text-amber-100 font-bold text-xl mb-2 group-hover:text-amber-200 transition-colors">{material.name}</h3>
+              <p className="text-orange-200/80 text-sm leading-relaxed mb-4">{material.description}</p>
+              <div className="flex items-center gap-2 text-amber-400 font-semibold group-hover:gap-3 transition-all">
+                <span>Learn More</span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Detailed View */}
+        {selectedMaterial && (
+          <div ref={detailsRef} className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-2xl border-2 border-orange-300/40 rounded-[30px] p-6 md:p-12 animate-fadeIn shadow-2xl scroll-mt-20">
+            <div className="flex flex-col md:flex-row items-start gap-6 mb-8">
+              <div className="text-6xl md:text-7xl animate-floatMedium">{selectedMaterial.icon}</div>
+              <div className="flex-1">
+                <h2 className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-red-400 text-3xl md:text-4xl font-bold mb-2 animate-gradient">
+                  {selectedMaterial.name}
+                </h2>
+                <p className="text-amber-100 text-lg leading-relaxed">{selectedMaterial.description}</p>
+              </div>
+              <button
+                onClick={() => setSelectedMaterial(null)}
+                className="md:ml-auto bg-orange-500/20 hover:bg-orange-500/30 border-2 border-orange-400/50 rounded-full p-2 transition-all"
+                title="Close details"
+              >
+                <span className="text-amber-300 text-xl">✕</span>
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+              {/* Advantages */}
+              <div className="bg-gradient-to-br from-emerald-900/40 to-green-900/40 border-2 border-emerald-500/40 rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:shadow-emerald-500/20 transition-all">
+                <div className="flex items-center gap-3 mb-6">
+                  <CheckCircle className="w-6 h-6 text-emerald-400" />
+                  <h3 className="text-emerald-400 font-bold text-2xl">Advantages</h3>
+                </div>
+                <ul className="space-y-3">
+                  {selectedMaterial.advantages.map((advantage, idx) => (
+                    <li key={idx} className="flex items-start gap-3 group hover:translate-x-1 transition-transform">
+                      <span className="text-emerald-400 mt-1 font-bold">✓</span>
+                      <span className="text-emerald-50 leading-relaxed">{advantage}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Disadvantages */}
+              <div className="bg-gradient-to-br from-red-900/40 to-rose-900/40 border-2 border-red-500/40 rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:shadow-red-500/20 transition-all">
+                <div className="flex items-center gap-3 mb-6">
+                  <XCircle className="w-6 h-6 text-red-400" />
+                  <h3 className="text-red-400 font-bold text-2xl">Disadvantages</h3>
+                </div>
+                <ul className="space-y-3">
+                  {selectedMaterial.disadvantages.map((disadvantage, idx) => (
+                    <li key={idx} className="flex items-start gap-3 group hover:translate-x-1 transition-transform">
+                      <span className="text-red-400 mt-1 font-bold">✗</span>
+                      <span className="text-red-50 leading-relaxed">{disadvantage}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Best For */}
+            <div className="mt-6 md:mt-8 bg-gradient-to-br from-purple-900/40 to-pink-900/40 border-2 border-purple-500/40 rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:shadow-purple-500/20 transition-all">
+              <div className="flex items-center gap-3 mb-3">
+                <Sparkles className="w-6 h-6 text-purple-400" />
+                <h3 className="text-purple-400 font-bold text-xl">Best Used For</h3>
+              </div>
+              <p className="text-purple-50 text-lg leading-relaxed">{selectedMaterial.bestFor}</p>
+            </div>
+          </div>
+        )}
+
+        {/* No Selection Prompt */}
+        {!selectedMaterial && (
+          <div className="text-center py-16 animate-fadeIn">
+            <div className="bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border-2 border-orange-400/40 rounded-2xl p-12 max-w-2xl mx-auto shadow-xl">
+
+              <p className="text-amber-100 text-xl leading-relaxed">
+                Click on any material above to learn more about its properties, advantages, and best uses
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Floating Back to Top Button */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="fixed bottom-8 right-8 bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 text-white w-16 h-16 rounded-full shadow-2xl hover:from-amber-500 hover:via-orange-500 hover:to-red-500 transition-all transform hover:scale-110 flex items-center justify-center text-3xl z-50 group border-2 border-amber-400/50"
+        title="Back to top"
+      >
+        <span className="group-hover:-translate-y-1 transition-transform duration-300">↑</span>
+      </button>
     </div>
   );
 }

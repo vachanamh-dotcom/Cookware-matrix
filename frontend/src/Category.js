@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { ArrowLeft, Filter, Star, ShoppingCart, Heart, Loader } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft, Filter, Star, Sparkles, X } from "lucide-react";
 import { formatPrice, getImage } from "./utils/formatters";
 
 export default function CategoryPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const selectedCategory = location.state?.category || "Fry Pan";
   
   const [selectedMaterial, setSelectedMaterial] = useState("All");
@@ -12,8 +13,32 @@ export default function CategoryPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Fetch products from your database
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 20 - 10,
+        y: (e.clientY / window.innerHeight) * 20 - 10
+      });
+    };
+
+    const handleScroll = () => {
+      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const currentScroll = window.scrollY;
+      setScrollProgress((currentScroll / totalScroll) * 100);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   useEffect(() => {
     fetchProducts();
   }, [selectedCategory]);
@@ -49,7 +74,6 @@ export default function CategoryPage() {
     { name: "Above ₹5000", range: "5000+", min: 5000, max: Infinity }
   ];
 
-  // Calculate material counts dynamically from products
   const getMaterialCounts = () => {
     const counts = {};
     products.forEach(product => {
@@ -69,12 +93,9 @@ export default function CategoryPage() {
 
   const materials = getMaterialCounts();
 
-  // Filter products based on selected filters
   const filteredProducts = products.filter(product => {
-    // Material filter
     const materialMatch = selectedMaterial === "All" || product.material === selectedMaterial;
     
-    // Price filter (prices stored in rupees)
     let priceMatch = true;
     if (priceFilter !== "All") {
       const selectedRange = priceRanges.find(range => range.range === priceFilter);
@@ -86,85 +107,144 @@ export default function CategoryPage() {
     return materialMatch && priceMatch;
   });
 
+  const handleProductView = (productId) => {
+    navigate(`/product/${productId}`);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 font-sans relative overflow-hidden">
-      {/* Animated background blobs */}
-      <div className="absolute top-20 left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-20 right-40 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-      <div className="absolute top-1/2 left-1/3 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+    <div className="min-h-screen bg-gradient-to-br from-amber-950 via-orange-900 to-red-950 font-sans relative overflow-hidden">
+      {/* Scroll Progress Bar */}
+      <div className="fixed top-0 left-0 right-0 h-1 bg-orange-950/50 z-50">
+        <div 
+          className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 transition-all duration-150"
+          style={{ width: `${scrollProgress}%` }}
+        ></div>
+      </div>
+
+      {/* Animated background blobs with mouse tracking */}
+      <div 
+        className="absolute top-20 left-20 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl animate-pulse"
+        style={{ transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)` }}
+      ></div>
+      <div 
+        className="absolute bottom-20 right-40 w-80 h-80 bg-amber-500/20 rounded-full blur-3xl animate-pulse" 
+        style={{ animationDelay: '1s', transform: `translate(${-mousePosition.x}px, ${-mousePosition.y}px)` }}
+      ></div>
+      <div className="absolute top-1/2 left-1/3 w-96 h-96 bg-red-500/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+
+      {/* Floating cookware icons */}
+      <div className="absolute top-10 left-10 text-6xl opacity-20 animate-floatSlow">🍳</div>
+      <div className="absolute top-32 right-20 text-5xl opacity-15 animate-floatMedium" style={{ animationDelay: '1s' }}>🍲</div>
+      <div className="absolute bottom-20 left-32 text-7xl opacity-10 animate-floatSlow" style={{ animationDelay: '2s' }}>🥘</div>
+      <div className="absolute top-1/2 right-10 text-4xl opacity-15 animate-floatMedium" style={{ animationDelay: '1.5s' }}>🫕</div>
 
       {/* Navigation */}
-      <nav className="relative z-20 px-8 py-6 animate-slideDown">
+      <nav className="relative z-20 px-4 md:px-8 py-6 animate-slideDown">
         <div className="flex items-center justify-between">
           <button 
             onClick={() => window.history.back()}
-            className="flex items-center gap-2 text-white hover:text-emerald-400 transition-all hover:drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+            className="flex items-center gap-2 text-amber-100 hover:text-amber-300 transition-all hover:drop-shadow-[0_0_12px_rgba(251,191,36,0.8)] hover:scale-110"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Back to Home</span>
+            <span className="font-semibold">Back to Home</span>
           </button>
-          <div className="flex gap-8 text-white text-base font-medium">
-            <a href="/" className="hover:text-emerald-400 transition-all">Home</a>
-            <a href="/compare" className="hover:text-emerald-400 transition-all">Compare</a>
+          <div className="hidden md:flex gap-8 text-amber-100 text-base font-semibold">
+            <a href="/home" className="hover:text-amber-300 transition-all duration-300 hover:drop-shadow-[0_0_12px_rgba(251,191,36,0.8)] hover:scale-110 relative group">
+              Home
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-amber-300 group-hover:w-full transition-all duration-300"></span>
+            </a>
+            <a href="/compare" className="hover:text-amber-300 transition-all duration-300 hover:drop-shadow-[0_0_12px_rgba(251,191,36,0.8)] hover:scale-110 relative group">
+              Compare
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-amber-300 group-hover:w-full transition-all duration-300"></span>
+            </a>
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-8 py-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-8">
         {/* Header */}
         <div className="mb-12 animate-scaleIn">
-          <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 text-6xl font-bold mb-4">
-            {selectedCategory}
-          </h1>
-          <p className="text-slate-300 text-xl">
-            {loading ? "Loading products..." : `Explore ${filteredProducts.length} products across different materials`}
+          <div className="flex items-center gap-3 mb-4">
+            <Sparkles className="w-10 h-10 text-amber-400 animate-pulse" />
+            <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-red-400 text-5xl md:text-6xl font-bold animate-gradient">
+              {selectedCategory}
+            </h1>
+          </div>
+          <p className="text-amber-100 text-lg md:text-xl drop-shadow-lg">
+            {loading ? "Loading products..." : `Discover ${filteredProducts.length} premium products`}
           </p>
+        </div>
+
+        {/* Mobile Filter Button */}
+        <div className="md:hidden mb-6 animate-fadeInUp">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white py-3 rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-xl"
+          >
+            <Filter className="w-5 h-5" />
+            {showFilters ? 'Hide Filters' : 'Show Filters'}
+          </button>
         </div>
 
         {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-20 animate-fadeInUp">
-            <Loader className="w-12 h-12 text-emerald-400 animate-spin mb-4" />
-            <p className="text-slate-300 text-lg">Loading products...</p>
+            <div className="text-8xl mb-6 animate-bounce">🍳</div>
+            <p className="text-amber-100 text-lg">Loading amazing products...</p>
           </div>
         )}
 
         {/* Error State */}
         {error && !loading && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 mb-8 animate-fadeInUp">
-            <p className="text-red-400">⚠️ {error}</p>
-            <p className="text-slate-400 text-sm mt-2">Please make sure the backend server is running on port 5000.</p>
+          <div className="bg-red-900/30 border-2 border-red-500/50 backdrop-blur-xl rounded-2xl p-6 mb-8 animate-fadeInUp">
+            <p className="text-red-300 font-semibold">⚠️ {error}</p>
+            <p className="text-orange-200/80 text-sm mt-2">Please make sure the backend server is running on port 5000.</p>
           </div>
         )}
 
         {!loading && (
-        <div className="flex gap-8">
+        <div className="flex flex-col md:flex-row gap-8">
           {/* Filters Sidebar */}
-          <div className="w-72 flex-shrink-0 animate-slideInLeft">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sticky top-8">
-              <div className="flex items-center gap-2 mb-6">
-                <Filter className="w-5 h-5 text-emerald-400" />
-                <h2 className="text-white font-bold text-xl">Filters</h2>
+          <div className={`${showFilters ? 'block' : 'hidden'} md:block w-full md:w-72 flex-shrink-0 animate-slideInLeft`}>
+            <div className="bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border-2 border-orange-400/40 rounded-3xl p-6 sticky top-8 shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-5 h-5 text-amber-400" />
+                  <h2 className="text-amber-100 font-bold text-xl">Filters</h2>
+                </div>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="md:hidden text-amber-300 hover:text-amber-400"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
               {/* Material Filter */}
               <div className="mb-8">
-                <h3 className="text-slate-300 font-semibold mb-4 text-sm uppercase tracking-wide">Material</h3>
+                <h3 className="text-amber-200 font-semibold mb-4 text-sm uppercase tracking-wide flex items-center gap-2">
+                  <span className="text-lg">🔨</span> Material
+                </h3>
                 <div className="space-y-2">
                   {materials.map((material, index) => (
                     <button
                       key={index}
-                      onClick={() => setSelectedMaterial(material.name)}
-                      className={`w-full text-left px-4 py-3 rounded-xl transition-all ${
+                      onClick={() => {
+                        setSelectedMaterial(material.name);
+                        setShowFilters(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-xl transition-all transform hover:scale-105 ${
                         selectedMaterial === material.name
-                          ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg"
-                          : "bg-slate-800/50 text-slate-300 hover:bg-slate-700/50"
+                          ? "bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white shadow-xl border-2 border-amber-300/50"
+                          : "bg-orange-800/30 text-amber-100 hover:bg-orange-700/40 border-2 border-orange-400/20"
                       }`}
                     >
                       <div className="flex justify-between items-center">
-                        <span className="font-medium">{material.name}</span>
-                        <span className="text-sm opacity-75">({material.count})</span>
+                        <span className="font-semibold">{material.name}</span>
+                        <span className="text-sm opacity-90 bg-orange-950/40 px-2 py-1 rounded-full">
+                          {material.count}
+                        </span>
                       </div>
                     </button>
                   ))}
@@ -173,19 +253,24 @@ export default function CategoryPage() {
 
               {/* Price Filter */}
               <div>
-                <h3 className="text-slate-300 font-semibold mb-4 text-sm uppercase tracking-wide">Price Range</h3>
+                <h3 className="text-amber-200 font-semibold mb-4 text-sm uppercase tracking-wide flex items-center gap-2">
+                  <span className="text-lg">💰</span> Price Range
+                </h3>
                 <div className="space-y-2">
                   {priceRanges.map((range, index) => (
                     <button
                       key={index}
-                      onClick={() => setPriceFilter(range.range)}
-                      className={`w-full text-left px-4 py-3 rounded-xl transition-all ${
+                      onClick={() => {
+                        setPriceFilter(range.range);
+                        setShowFilters(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-xl transition-all transform hover:scale-105 ${
                         priceFilter === range.range
-                          ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg"
-                          : "bg-slate-800/50 text-slate-300 hover:bg-slate-700/50"
+                          ? "bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white shadow-xl border-2 border-amber-300/50"
+                          : "bg-orange-800/30 text-amber-100 hover:bg-orange-700/40 border-2 border-orange-400/20"
                       }`}
                     >
-                      <span className="font-medium">{range.name}</span>
+                      <span className="font-semibold">{range.name}</span>
                     </button>
                   ))}
                 </div>
@@ -199,68 +284,64 @@ export default function CategoryPage() {
               {filteredProducts.map((product, index) => (
                 <div
                   key={product._id}
-                  className="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all transform hover:scale-[1.02] hover:shadow-2xl cursor-pointer animate-fadeInUp"
+                  onClick={() => handleProductView(product._id)}
+                  className="group relative bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border-2 border-orange-400/40 rounded-3xl p-6 hover:border-amber-400/60 hover:from-orange-900/70 hover:to-red-900/70 transition-all transform hover:scale-105 hover:shadow-2xl hover:shadow-amber-500/20 cursor-pointer animate-fadeInUp flex flex-col"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  {/* Actions */}
-                  <div className="flex justify-end items-start mb-4">
-                    <button className="text-slate-400 hover:text-red-400 transition-colors">
-                      <Heart className="w-5 h-5" />
-                    </button>
-                  </div>
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-t-3xl"></div>
 
                   {/* Product Image */}
-                  <div className="text-center mb-6">
-                    <img 
-                      src={getImage(product.image)} 
-                      alt={product.title}
-                      className="w-32 h-32 object-contain mx-auto mb-4 transform group-hover:scale-110 transition-transform"
-                      onError={(e) => {
-                        e.target.src = "/placeholder.png";
-                        e.target.onerror = null;
-                      }}
-                    />
+                  <div className="text-center mb-4 mt-4">
+                    <div className="h-40 flex items-center justify-center mb-4">
+                      <img 
+                        src={getImage(product.image)} 
+                        alt={product.title}
+                        className="max-w-full max-h-40 object-contain transform group-hover:scale-110 transition-transform drop-shadow-xl"
+                        onError={(e) => {
+                          e.target.src = "/placeholder.png";
+                          e.target.onerror = null;
+                        }}
+                      />
+                    </div>
                     {product.material && (
-                      <span className="inline-block bg-slate-700/50 text-slate-300 text-xs px-3 py-1 rounded-full">
+                      <span className="inline-block bg-orange-800/50 text-amber-200 text-xs px-3 py-1 rounded-full border border-orange-400/30">
                         {product.material}
                       </span>
                     )}
                   </div>
 
                   {/* Product Info */}
-                  <div className="space-y-3">
-                    <div>
-                      <h3 className="text-white font-bold text-lg leading-tight mb-1">
-                        {product.title}
-                      </h3>
-                      <p className="text-slate-400 text-sm">
-                        {product.brand} {product.dimensions && `• ${product.dimensions}`}
-                      </p>
-                    </div>
+                  <div className="flex flex-col flex-grow">
+                    <h3 className="text-amber-100 font-bold text-lg leading-tight mb-2 group-hover:text-amber-200 transition-colors min-h-[3.5rem]">
+                      {product.title}
+                    </h3>
+                    <p className="text-orange-200/80 text-sm mb-4">
+                      {product.brand}
+                    </p>
 
                     {/* Rating */}
                     {product.rating && (
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="flex items-center bg-orange-950/50 px-2 py-1 rounded-full">
                           <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                          <span className="text-white font-semibold ml-1">{product.rating}</span>
+                          <span className="text-amber-100 font-semibold ml-1">{product.rating}</span>
                         </div>
                       </div>
                     )}
 
                     {/* Price and Actions */}
-                    <div className="pt-4 border-t border-white/10">
-                      <div className="flex items-baseline gap-2 mb-3">
-                        <span className="text-emerald-400 font-bold text-2xl">
+                    <div className="pt-4 border-t border-orange-400/30 mt-auto">
+                      <div className="flex items-center justify-between">
+                        <span className="text-amber-400 font-bold text-2xl drop-shadow-lg">
                           {formatPrice(product.price)}
                         </span>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-2.5 rounded-xl font-semibold hover:from-emerald-400 hover:to-teal-400 transition-all transform hover:scale-105 flex items-center justify-center gap-2">
-                          <ShoppingCart className="w-4 h-4" />
-                          Add to Cart
-                        </button>
-                        <button className="px-4 bg-slate-700/50 text-white rounded-xl hover:bg-slate-600/50 transition-all">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleProductView(product._id);
+                          }}
+                          className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white px-6 py-2.5 rounded-xl font-semibold hover:from-amber-400 hover:via-orange-400 hover:to-red-400 transition-all transform hover:scale-105 shadow-xl"
+                        >
                           View
                         </button>
                       </div>
@@ -271,10 +352,19 @@ export default function CategoryPage() {
             </div>
 
             {filteredProducts.length === 0 && !loading && (
-              <div className="text-center py-20">
+              <div className="text-center py-20 bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border-2 border-orange-400/40 rounded-3xl animate-fadeInUp">
                 <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-white text-2xl font-bold mb-2">No products found</h3>
-                <p className="text-slate-400">Try adjusting your filters or check if products exist for this category</p>
+                <h3 className="text-amber-100 text-2xl font-bold mb-2">No products found</h3>
+                <p className="text-orange-200/80 mb-4">Try adjusting your filters</p>
+                <button
+                  onClick={() => {
+                    setSelectedMaterial("All");
+                    setPriceFilter("All");
+                  }}
+                  className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white px-6 py-3 rounded-full font-semibold hover:from-amber-400 hover:via-orange-400 hover:to-red-400 transition-all transform hover:scale-105 shadow-xl"
+                >
+                  Clear Filters
+                </button>
               </div>
             )}
           </div>
@@ -282,81 +372,63 @@ export default function CategoryPage() {
         )}
       </div>
 
+      {/* Floating Back to Top Button */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="fixed bottom-8 right-8 bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 text-white w-16 h-16 rounded-full shadow-2xl hover:from-amber-500 hover:via-orange-500 hover:to-red-500 transition-all transform hover:scale-110 flex items-center justify-center text-3xl z-50 group border-2 border-amber-400/50"
+        title="Back to top"
+      >
+        <span className="group-hover:-translate-y-1 transition-transform duration-300">↑</span>
+      </button>
+
       <style>{`
+        @keyframes floatSlow {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-30px) rotate(5deg); }
+        }
+        @keyframes floatMedium {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(-5deg); }
+        }
+        .animate-floatSlow {
+          animation: floatSlow 8s ease-in-out infinite;
+        }
+        .animate-floatMedium {
+          animation: floatMedium 6s ease-in-out infinite;
+        }
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 3s ease infinite;
+        }
         @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-
         @keyframes scaleIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
         }
-
         @keyframes slideInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
+          from { opacity: 0; transform: translateX(-30px); }
+          to { opacity: 1; transform: translateX(0); }
         }
-
         @keyframes slideInRight {
-          from {
-            opacity: 0;
-            transform: translateX(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
+          from { opacity: 0; transform: translateX(30px); }
+          to { opacity: 1; transform: translateX(0); }
         }
-
         @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-
-        .animate-slideDown {
-          animation: slideDown 0.6s ease-out;
-        }
-
-        .animate-scaleIn {
-          animation: scaleIn 0.8s ease-out;
-        }
-
-        .animate-slideInLeft {
-          animation: slideInLeft 0.8s ease-out both;
-        }
-
-        .animate-slideInRight {
-          animation: slideInRight 0.8s ease-out both;
-        }
-
-        .animate-fadeInUp {
-          animation: fadeInUp 0.8s ease-out both;
-        }
+        .animate-slideDown { animation: slideDown 0.6s ease-out; }
+        .animate-scaleIn { animation: scaleIn 0.8s ease-out; }
+        .animate-slideInLeft { animation: slideInLeft 0.8s ease-out both; }
+        .animate-slideInRight { animation: slideInRight 0.8s ease-out both; }
+        .animate-fadeInUp { animation: fadeInUp 0.8s ease-out both; }
       `}</style>
     </div>
   );
